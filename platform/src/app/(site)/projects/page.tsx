@@ -1,0 +1,90 @@
+import Link from 'next/link'
+import type { Where } from 'payload'
+import { CivicMap } from '@/components/CivicMap'
+import { DemoFlag, Empty, PageBand, StatusBadge, WardChip, human } from '@/components/ui'
+import { projectGeoJSON } from '@/lib/gis'
+import { formatCents } from '@/lib/money'
+import { one, pick, qs, type SP } from '@/lib/params'
+import { getClient } from '@/lib/payload'
+import { findPublic } from '@/lib/public'
+import { PROJECT_PHASES } from '@/collections/data'
+
+export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Projects' }
+const TYPES = ['paving', 'sidewalks', 'water_sewer', 'parks', 'facilities', 'traffic_safety', 'other'] as const
+const WARDS = ['north', 'south', 'east', 'west'] as const
+
+export default async function Projects({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams
+  const f = {
+    street: one(sp.street).slice(0, 80), ward: pick(one(sp.ward), WARDS), type: pick(one(sp.type), TYPES),
+    phase: pick(one(sp.phase), PROJECT_PHASES), year: /^\d{4}$/.test(one(sp.year)) ? one(sp.year) : undefined,
+    view: one(sp.view) === 'list' ? 'list' : 'map',
+  }
+  const and: Where[] = []
+  if (f.street) and.push({ or: [{ 'streets.name': { like: f.street } }, { title: { like: f.street } }] })
+  if (f.ward) and.push({ wards: { in: [f.ward] } })
+  if (f.type) and.push({ projectType: { equals: f.type } })
+  if (f.phase) and.push({ phase: { equals: f.phase } })
+  if (f.year) and.push({ programYear: { equals: Number(f.year) } })
+  const res = await findPublic('projects', { where: and.length ? { and } : undefined, sort: '-programYear', limit: 200 })
+  const docs = res.docs as any[]
+  const allYears = [...new Set(((await findPublic('projects', { limit: 500 })).docs as any[]).map((p) => p.programYear).filter(Boolean))].sort().reverse()
+  const geo = await projectGeoJSON(await getClient(), docs.map((d) => d.id))
+  const byId = new Map(docs.map((d) => [d.id, d]))
+  geo.features.forEach((ft: any) => { const p = byId.get(ft.properties.projectId); ft.properties.phase = p?.phase; ft.properties.slug = p?.slug })
+  const base = { street: f.street || undefined, ward: f.ward, type: f.type, phase: f.phase, year: f.year }
+  const anyDemo = docs.some((d) => d.verificationStatus === 'demo')
+
+  return (
+    <>
+      <PageBand eyebrow="Capital projects" title="Better streets. Visible progress.">
+        <p style={{ color: '#DCE3EA' }}>Follow street and infrastructure work from approval through closeout. Each fact shows its source.</p>
+      </PageBand>
+      <div className="container section">
+        {anyDemo && <p><DemoFlag text="Illustrative projects and geometry — not City data" /></p>}
+        <form className="filters" method="get" aria-label="Filter projects">
+          <div className="field"><label htmlFor="street">Street</label><input id="street" name="street" type="text" defaultValue={f.street} /></div>
+          <div className="field"><label htmlFor="ward">Ward</label><select id="ward" name="ward" defaultValue={f.ward ?? ''}><option value="">All wards</option>{WARDS.map((w) => <option key={w} value={w}>{human(w)}</option>)}</select></div>
+          <div className="field"><label htmlFor="type">Type</label><select id="type" name="type" defaultValue={f.type ?? ''}><option value="">All types</option>{TYPES.map((t) => <option key={t} value={t}>{human(t)}</option>)}</select></div>
+          <div className="field"><label htmlFor="phase">Phase</label><select id="phase" name="phase" defaultValue={f.phase ?? ''}><option value="">All phases</option>{PROJECT_PHASES.map((t) => <option key={t} value={t}>{human(t)}</option>)}</select></div>
+          <div className="field"><label htmlFor="year">Program year</label><select id="year" name="year" defaultValue={f.year ?? ''}><option value="">All years</option>{allYears.map((y) => <option key={y} value={y}>{y}</option>)}</select></div>
+          <input type="hidden" name="view" value={f.view} />
+          <button className="btn" type="submit">Apply filters</button>
+        </form>
+        <div className="tabs" role="navigation" aria-label="View">
+          <Link href={`/projects${qs(base, { view: undefined })}`} aria-current={f.view === 'map' ? 'page' : undefined}>Map and list</Link>
+          <Link href={`/projects${qs(base, { view: 'list' })}`} aria-current={f.view === 'list' ? 'page' : undefined}>List only</Link>
+        </div>
+        <p role="status">{docs.length} project{docs.length === 1 ? '' : 's'} match.</p>
+        {f.view === 'map' && docs.length > 0 && (
+          <>
+            <CivicMap label="Project locations" projects={geo as any} linkBase="/projects" />
+            <div className="map-legend" aria-label="Map legend">
+              <span><i className="swatch-line" aria-hidden="true" />Under construction (solid)</span>
+              <span><i className="swatch-line swatch-line--dash" aria-hidden="true" />Planned / design (dashed)</span>
+              <span><i className="swatch-line" style={{ borderColor: 'var(--success)', borderTopStyle: 'dashed' }} aria-hidden="true" />Complete (long dash, green)</span>
+            </div>
+          </>
+        )}
+        {docs.length === 0 ? <Empty title="No projects match these filters."><p><Link href="/projects">Clear filters</Link></p></Empty> : (
+          <div className="table-wrap">
+            <table>
+              <caption>Projects{f.view === 'map' ? ' (same as the map)' : ''}</caption>
+              <thead><tr><th scope="col">Project</th><th scope="col">Phase</th><th scope="col">Ward</th><th scope="col">Year</th><th scope="col" className="num">Estimated cost</th></tr></thead>
+              <tbody>{docs.map((p) => (
+                <tr key={p.id}>
+                  <td><Link href={`/projects/${p.slug}`}>{p.title}</Link><div className="meta">{(p.streets ?? []).map((s: any) => s.name).join(', ')}</div></td>
+                  <td><StatusBadge status={p.phase} /></td>
+                  <td>{(p.wards ?? []).map((w: string) => <WardChip key={w} ward={w} />)}{!p.wards?.length && 'Not available'}</td>
+                  <td className="num">{p.programYear ?? 'Not available'}</td>
+                  <td className="num">{formatCents(p.cost?.estimatedCents)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}

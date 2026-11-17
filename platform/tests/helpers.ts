@@ -18,5 +18,5 @@ export async function makeUser(payload: Payload, roles: string[], departments: n
 }
 
 export async function makeDept(payload: Payload, name: string) {
-  return payload.create({ collection: 'departments', overrideAccess: true, data: { name, slug: `${name.toLowerCase().replace(/\W+/g, '-')}-${Date.now()}` } })
+  return payload.create({ collection: 'departments', overrideAccess: true, data: { name, slug: `${name.toLowerCase().replace(/\W+/g, "-")}-${Date.now()}` } as any })
 }

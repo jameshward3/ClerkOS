@@ -90,7 +90,8 @@ export const Media: CollectionConfig = {
 export const SourceRecords: CollectionConfig = {
   slug: 'source-records',
   admin: { group: 'Records & provenance', useAsTitle: 'title', defaultColumns: ['title', 'ownerType', 'retrievedAt', 'status'] },
-  access: { read: staffOnly, create: staffOnly, update: staffOnly, delete: adminOnly },
+  // Lineage is public by design (residents can see where facts came from).
+  access: { read: () => true, create: staffOnly, update: staffOnly, delete: adminOnly },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'url', type: 'text' },

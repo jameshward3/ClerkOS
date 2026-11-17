@@ -114,3 +114,10 @@ export async function projectGeoJSON(payload: Payload, projectIds: number[]) {
     [projectIds])
   return { type: 'FeatureCollection', features: rows.map((r) => ({ type: 'Feature', properties: { projectId: r.project_id, label: r.label, verification: r.verification }, geometry: r.g })) }
 }
+
+export async function placesGeoJSON(payload: Payload, places: { id: number; slug: string; name: string; jurisdiction: string; kind: string }[]) {
+  if (!places.length) return { type: 'FeatureCollection', features: [] }
+  const byId = new Map(places.map((p) => [p.id, p]))
+  const rows = await q(payload, `SELECT place_id, verification, ST_AsGeoJSON(geom, 6)::json AS g FROM civic.place_points WHERE place_id = ANY($1::int[])`, [places.map((p) => p.id)])
+  return { type: 'FeatureCollection', features: rows.map((r) => { const p = byId.get(r.place_id)!; return { type: 'Feature', properties: { slug: p.slug, name: p.name, jurisdiction: p.jurisdiction, kind: p.kind, verification: r.verification }, geometry: r.g } }) }
+}

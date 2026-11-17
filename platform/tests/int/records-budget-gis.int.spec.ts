@@ -77,7 +77,7 @@ Current,Tax Collector,Property taxes,9-01,Levy,"900,000",revenue
   }
 
   beforeAll(async () => {
-    src = await payload.create({ collection: 'source-records', overrideAccess: true, data: { title: 'Test fixture', owner: 'Test', ownerType: 'third_party', retrievedAt: new Date().toISOString() } })
+    src = await payload.create({ collection: 'source-records', overrideAccess: true, data: { title: 'Test fixture', owner: 'Test', ownerType: 'third_party', retrievedAt: new Date().toISOString() } as any })
     ds = await payload.create({ collection: 'budget-datasets', data: { title: 'FY2099 demo', fiscalYear: 2099, basis: 'adopted', kind: 'operating', sourceDescription: 'Test', dataUpdatedAt: new Date().toISOString(), verificationStatus: 'demo' } as any, user: dm, overrideAccess: false })
   })
 

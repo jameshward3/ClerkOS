@@ -1,10 +1,12 @@
 {
   "name": "orange-platform",
   "version": "0.1.0",
-  "description": "City of Orange Township unified public platform (public site + editorial CMS). Prototype — not the official City website.",
+  "description": "City of Orange Township unified public platform (public site + editorial CMS). Prototype \u2014 not the official City website.",
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/vendor-maplibre.mjs",
+    "prebuild": "node scripts/vendor-maplibre.mjs",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
@@ -33,6 +35,7 @@
     "csv-parse": "7.0.3",
     "dotenv": "16.4.7",
     "graphql": "16.11.0",
+    "lucide-react": "1.66.0",
     "maplibre-gl": "6.16.0",
     "next": "16.4.5",
     "nodemailer": "10.3.1",
