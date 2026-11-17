@@ -80,6 +80,12 @@ All seeded accounts use the password in `CLERKOS_SEED_PASSWORD`
 | [docs/10-testing-plan.md](docs/10-testing-plan.md) | Test strategy and current coverage |
 | [docs/11-roadmap.md](docs/11-roadmap.md) | MVP + future roadmap, developer task breakdown |
 
+## Public platform (prototype)
+
+`platform/` contains a separate Next.js + Payload + PostGIS public website and editorial CMS for the City of Orange
+Township. It does not modify ClerkOS. See [platform/README.md](platform/README.md) and
+[platform/BUILD_STATUS.md](platform/BUILD_STATUS.md).
+
 ## Repository layout
 
 ```
@@ -90,6 +96,7 @@ ClerkOS/
 ├── frontend/           React + Vite + TypeScript SPA
 ├── deploy/             Nginx config, TLS + backup/restore scripts
 ├── docs/               Full specification set
+├── platform/           Public platform prototype (Next.js + Payload + PostGIS)
 ├── docker-compose.yml  On-prem deployment
 └── Makefile            Operator shortcuts
 ```
