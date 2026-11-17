@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 import { BudgetDatasets, BudgetLines, ImportBatches, Places, Projects, Wards } from './collections/data'
 import { Departments, Events, Notices, Officials, ProjectUpdates, SeasonalFeatures, Services } from './collections/editorial'
 import { Legislation, Meetings, Votes } from './collections/records'
-import { AuditEvents, Media, Outbox, Redirects, ServiceRequests, SourceRecords, Subscriptions, Users } from './collections/system'
+import { AuditEvents, LinkChecks, Media, Outbox, Redirects, ServiceRequests, SourceRecords, Subscriptions, Users } from './collections/system'
 import { tasks } from './jobs/tasks'
 import { userOf, isAdmin } from './access/roles'
 
@@ -43,7 +43,7 @@ export default buildConfig({
     // Residents & notifications
     ServiceRequests, Subscriptions, Outbox,
     // Provenance & admin
-    SourceRecords, Redirects, AuditEvents, Users,
+    SourceRecords, Redirects, AuditEvents, LinkChecks, Users,
   ],
   localization: {
     locales: [

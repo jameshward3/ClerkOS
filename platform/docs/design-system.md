@@ -1,4 +1,6 @@
 # Design system
+Contract: [Orange_Agentic_Style_Guide.md](Orange_Agentic_Style_Guide.md) · status: [style-guide-conformance.md](style-guide-conformance.md)
+
 Tokens: `src/styles/tokens.css` (exact values from the brief). Components: `src/styles/site.css`, `src/components/*`.
 
 - **Color:** navy `#0B2035` primary; brass gold `#B79B59` accent only (never small text on white — gold text uses
@@ -16,5 +18,7 @@ Tokens: `src/styles/tokens.css` (exact values from the brief). Components: `src/
   `ConcernForm`, `SubscribeForm`, tabs, agenda disclosure, timeline, facts list, filters bar.
 - **Charts:** horizontal bars, zero baseline; years = rows, categories = additive segments; HTML legend in fixed order;
   every chart followed by an equivalent table and a text summary; missing values display "Not available".
-- **Maps:** project lines differ by dash pattern *and* color by phase; places differ by filled (City) vs hollow (other
-  agency). Ward fills drawn only from verified geometry.
+- **Maps:** project status groups (guide §6): planning navy dashed; scheduled gold dashed; active teal solid + work
+  symbol; complete navy solid + check symbol; paused gray dotted. Places: filled (City) vs hollow (other agency). Ward
+  fills only from verified geometry; otherwise an "Illustrative map" banner. Mobile shows the list first.
+- **Focus:** 3px #005FCC outline, 3px offset; on navy a gold outline with a white inner ring; forced-colors uses system colors.

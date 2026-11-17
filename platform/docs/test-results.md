@@ -1,11 +1,11 @@
-# Test results — 2026-11-17 (authoring environment: Linux, Node 22.23.5, PostgreSQL 16.15 + PostGIS 3.4, Chromium via Playwright 1.63.0)
+# Test results — 2026-11-17 (updated after style-guide conformance pass) (authoring environment: Linux, Node 22.23.5, PostgreSQL 16.15 + PostGIS 3.4, Chromium via Playwright 1.63.0)
 
 | Check | Command | Result |
 |---|---|---|
 | Type check | `pnpm typecheck` | ✅ no errors |
 | Lint | `pnpm lint` | ✅ 0 errors, 0 warnings |
-| Unit + integration (real Postgres test DB, reset per run) | `pnpm test:int` | ✅ 34/34 |
-| Browser + accessibility + REST | `pnpm test:e2e` | ✅ 51 passed, 1 skipped (mobile-only menu test in desktop project) |
+| Unit + integration (real Postgres test DB, reset per run) | `pnpm test:int` | ✅ 71/71 (incl. 31 contrast pairs, SSRF guard, media manifest, link checks) |
+| Browser + accessibility + REST | `pnpm test:e2e` | ✅ 61 passed, 3 skipped (mobile-only tests in the desktop project) |
 | Production build | `pnpm build` | ✅ |
 | Migrations from empty DB | test global setup runs `payload migrate` + `sql-migrate` | ✅ |
 | Backup → restore drill | `deploy/backup.sh` / `deploy/restore.sh` | ✅ row counts + budget total identical |
@@ -48,3 +48,9 @@ Not representative of production network conditions; compressed transfer sizes w
 ## Screenshots
 `docs/screenshots/{home,explore,projects,budget,meeting}-{desktop,mobile}.png` (desktop 1440 px; mobile iPhone 13 emulation).
 Regenerate: `node scripts/screenshots.mjs` with the dev server running.
+
+## Style-guide additions (second pass)
+Forced-colors: axe's color-contrast rule reports author colors under Chromium forced-colors emulation even though the
+browser renders system colors; the test therefore disables only that rule in forced-colors mode and asserts that no
+author text/icon colors remain in the rendered output (this caught gold task icons, now fixed). The 200% zoom check
+uses a 640×450 CSS viewport (1280×900 at 2×).

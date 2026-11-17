@@ -90,6 +90,7 @@ export interface Config {
     'source-records': SourceRecord;
     redirects: Redirect;
     'audit-events': AuditEvent;
+    'link-checks': LinkCheck;
     users: User;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -122,6 +123,7 @@ export interface Config {
     'source-records': SourceRecordsSelect<false> | SourceRecordsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
+    'link-checks': LinkChecksSelect<false> | LinkChecksSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -150,6 +152,7 @@ export interface Config {
       deliverOutbox: TaskDeliverOutbox;
       reconcileSearch: TaskReconcileSearch;
       importBatch: TaskImportBatch;
+      checkLinks: TaskCheckLinks;
       inline: {
         input: unknown;
         output: unknown;
@@ -452,15 +455,26 @@ export interface SeasonalFeature {
   createdAt: string;
 }
 /**
+ * Asset manifest (style guide §2). Approval (may it be used?) and verification (are its facts — location, rights — confirmed?) are separate.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  kind: 'photo' | 'seal' | 'illustration' | 'document';
   /**
-   * Describe what the image shows for people who cannot see it. Not "image of…".
+   * Purely decorative (conveys no information). Decorative images use empty alt text.
    */
-  alt: string;
+  decorative?: boolean | null;
+  /**
+   * Describe what the image shows for people who cannot see it. Not "image of…". Leave empty only for decorative images.
+   */
+  alt?: string | null;
+  /**
+   * When the photo was taken, if known.
+   */
+  captureDate?: string | null;
   credit?: string | null;
   rightsHolder: string;
   /**
@@ -478,6 +492,16 @@ export interface Media {
    */
   isGenerated?: boolean | null;
   approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvedBy?: (number | null) | User;
+  approvedAt?: string | null;
+  /**
+   * SHA-256 of the uploaded original.
+   */
+  checksumSha256?: string | null;
+  /**
+   * Factual verification is separate from publication. "Demo" content is always labeled on public pages.
+   */
+  verificationStatus: 'unverified' | 'verified' | 'needs_review' | 'demo';
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -498,6 +522,14 @@ export interface Media {
       filesize?: number | null;
       filename?: string | null;
     };
+    cardAvif?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     hero?: {
       url?: string | null;
       width?: number | null;
@@ -506,7 +538,58 @@ export interface Media {
       filesize?: number | null;
       filename?: string | null;
     };
+    heroAvif?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  name: string;
+  /**
+   * See docs/permission-matrix.md. Only administrators can change roles.
+   */
+  roles: ('contributor' | 'department_reviewer' | 'publisher' | 'records_clerk' | 'data_manager' | 'administrator')[];
+  /**
+   * Contributors and reviewers can only work on content for these departments.
+   */
+  departments?: (number | Department)[] | null;
+  /**
+   * May publish emergency notices without review. Every use is audited.
+   */
+  canEmergencyPublish?: boolean | null;
+  /**
+   * Linked identity from the staff sign-in provider.
+   */
+  identityProviderSubject?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1289,47 +1372,25 @@ export interface AuditEvent {
   createdAt: string;
 }
 /**
+ * Daily check of links entered by editors (services, departments). Fix broken links in the referencing item.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "link-checks".
  */
-export interface User {
+export interface LinkCheck {
   id: number;
-  name: string;
+  url: string;
+  status: 'ok' | 'broken' | 'blocked' | 'error';
+  httpStatus?: number | null;
+  finalUrl?: string | null;
+  detail?: string | null;
+  checkedAt: string;
   /**
-   * See docs/permission-matrix.md. Only administrators can change roles.
+   * Where the link is used.
    */
-  roles: ('contributor' | 'department_reviewer' | 'publisher' | 'records_clerk' | 'data_manager' | 'administrator')[];
-  /**
-   * Contributors and reviewers can only work on content for these departments.
-   */
-  departments?: (number | Department)[] | null;
-  /**
-   * May publish emergency notices without review. Every use is audited.
-   */
-  canEmergencyPublish?: boolean | null;
-  /**
-   * Linked identity from the staff sign-in provider.
-   */
-  identityProviderSubject?: string | null;
+  referencedBy?: string | null;
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1400,7 +1461,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'publicationSweep' | 'deliverOutbox' | 'reconcileSearch' | 'importBatch';
+        taskSlug: 'inline' | 'publicationSweep' | 'deliverOutbox' | 'reconcileSearch' | 'importBatch' | 'checkLinks';
         taskID: string;
         input?:
           | {
@@ -1433,7 +1494,9 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'publicationSweep' | 'deliverOutbox' | 'reconcileSearch' | 'importBatch') | null;
+  taskSlug?:
+    | ('inline' | 'publicationSweep' | 'deliverOutbox' | 'reconcileSearch' | 'importBatch' | 'checkLinks')
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1547,6 +1610,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'audit-events';
         value: number | AuditEvent;
+      } | null)
+    | ({
+        relationTo: 'link-checks';
+        value: number | LinkCheck;
       } | null)
     | ({
         relationTo: 'users';
@@ -1693,7 +1760,10 @@ export interface SeasonalFeaturesSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  kind?: T;
+  decorative?: T;
   alt?: T;
+  captureDate?: T;
   credit?: T;
   rightsHolder?: T;
   license?: T;
@@ -1702,6 +1772,10 @@ export interface MediaSelect<T extends boolean = true> {
   locationVerified?: T;
   isGenerated?: T;
   approvalStatus?: T;
+  approvedBy?: T;
+  approvedAt?: T;
+  checksumSha256?: T;
+  verificationStatus?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -1726,7 +1800,27 @@ export interface MediaSelect<T extends boolean = true> {
               filesize?: T;
               filename?: T;
             };
+        cardAvif?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         hero?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        heroAvif?:
           | T
           | {
               url?: T;
@@ -2192,6 +2286,21 @@ export interface AuditEventsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "link-checks_select".
+ */
+export interface LinkChecksSelect<T extends boolean = true> {
+  url?: T;
+  status?: T;
+  httpStatus?: T;
+  finalUrl?: T;
+  detail?: T;
+  checkedAt?: T;
+  referencedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
@@ -2373,6 +2482,19 @@ export interface TaskImportBatch {
   };
   output: {
     result?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCheckLinks".
+ */
+export interface TaskCheckLinks {
+  input?: unknown;
+  output: {
+    ok?: number | null;
+    broken?: number | null;
+    blocked?: number | null;
+    error?: number | null;
   };
 }
 /**

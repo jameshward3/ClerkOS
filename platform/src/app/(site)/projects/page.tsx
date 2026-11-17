@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Where } from 'payload'
-import { CivicMap } from '@/components/CivicMap'
+import { CivicMap, ProjectLegend } from '@/components/CivicMap'
+import { GROUP_STYLE, groupOf } from '@/lib/projectStatus'
 import { DemoFlag, Empty, PageBand, StatusBadge, WardChip, human } from '@/components/ui'
 import { projectGeoJSON } from '@/lib/gis'
 import { formatCents } from '@/lib/money'
@@ -19,7 +20,7 @@ export default async function Projects({ searchParams }: { searchParams: SP }) {
   const f = {
     street: one(sp.street).slice(0, 80), ward: pick(one(sp.ward), WARDS), type: pick(one(sp.type), TYPES),
     phase: pick(one(sp.phase), PROJECT_PHASES), year: /^\d{4}$/.test(one(sp.year)) ? one(sp.year) : undefined,
-    view: one(sp.view) === 'list' ? 'list' : 'map',
+    view: (['list', 'map'] as const).find((v) => v === one(sp.view)) ?? 'default',
   }
   const and: Where[] = []
   if (f.street) and.push({ or: [{ 'streets.name': { like: f.street } }, { title: { like: f.street } }] })
@@ -47,35 +48,34 @@ export default async function Projects({ searchParams }: { searchParams: SP }) {
           <div className="field"><label htmlFor="street">Street</label><input id="street" name="street" type="text" defaultValue={f.street} /></div>
           <div className="field"><label htmlFor="ward">Ward</label><select id="ward" name="ward" defaultValue={f.ward ?? ''}><option value="">All wards</option>{WARDS.map((w) => <option key={w} value={w}>{human(w)}</option>)}</select></div>
           <div className="field"><label htmlFor="type">Type</label><select id="type" name="type" defaultValue={f.type ?? ''}><option value="">All types</option>{TYPES.map((t) => <option key={t} value={t}>{human(t)}</option>)}</select></div>
-          <div className="field"><label htmlFor="phase">Phase</label><select id="phase" name="phase" defaultValue={f.phase ?? ''}><option value="">All phases</option>{PROJECT_PHASES.map((t) => <option key={t} value={t}>{human(t)}</option>)}</select></div>
+          <div className="field"><label htmlFor="phase">Status</label><select id="phase" name="phase" defaultValue={f.phase ?? ''}><option value="">All statuses</option>{PROJECT_PHASES.map((t) => <option key={t} value={t}>{human(t)}</option>)}</select></div>
           <div className="field"><label htmlFor="year">Program year</label><select id="year" name="year" defaultValue={f.year ?? ''}><option value="">All years</option>{allYears.map((y) => <option key={y} value={y}>{y}</option>)}</select></div>
           <input type="hidden" name="view" value={f.view} />
           <button className="btn" type="submit">Apply filters</button>
         </form>
         <div className="tabs" role="navigation" aria-label="View">
-          <Link href={`/projects${qs(base, { view: undefined })}`} aria-current={f.view === 'map' ? 'page' : undefined}>Map and list</Link>
+          <Link href={`/projects${qs(base, { view: undefined })}`} aria-current={f.view !== 'list' ? 'page' : undefined}>Map and list</Link>
           <Link href={`/projects${qs(base, { view: 'list' })}`} aria-current={f.view === 'list' ? 'page' : undefined}>List only</Link>
         </div>
         <p role="status">{docs.length} project{docs.length === 1 ? '' : 's'} match.</p>
-        {f.view === 'map' && docs.length > 0 && (
+        {f.view !== 'list' && docs.length > 0 && (
           <>
-            <CivicMap label="Project locations" projects={geo as any} linkBase="/projects" />
-            <div className="map-legend" aria-label="Map legend">
-              <span><i className="swatch-line" aria-hidden="true" />Under construction (solid)</span>
-              <span><i className="swatch-line swatch-line--dash" aria-hidden="true" />Planned / design (dashed)</span>
-              <span><i className="swatch-line" style={{ borderColor: 'var(--success)', borderTopStyle: 'dashed' }} aria-hidden="true" />Complete (long dash, green)</span>
+            {f.view === 'default' && <Link className="btn btn--secondary map-toggle" href={`/projects${qs(base, { view: 'map' })}`}>Show map</Link>}
+            <div className={f.view === 'default' ? 'map-optional' : undefined}>
+              <CivicMap label="Project locations" projects={geo as any} linkBase="/projects" illustrative={geo.features.some((x: any) => x.properties.verification !== 'verified')} />
+              <ProjectLegend />
             </div>
           </>
         )}
         {docs.length === 0 ? <Empty title="No projects match these filters."><p><Link href="/projects">Clear filters</Link></p></Empty> : (
           <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
             <table>
-              <caption>Projects{f.view === 'map' ? ' (same as the map)' : ''}</caption>
+              <caption>Projects{f.view !== 'list' ? ' (same as the map)' : ''}</caption>
               <thead><tr><th scope="col">Project</th><th scope="col">Phase</th><th scope="col">Ward</th><th scope="col">Year</th><th scope="col" className="num">Estimated cost</th></tr></thead>
               <tbody>{docs.map((p) => (
                 <tr key={p.id}>
-                  <td><Link href={`/projects/${p.slug}`}>{p.title}</Link><div className="meta">{(p.streets ?? []).map((s: any) => s.name).join(', ')}</div></td>
-                  <td><StatusBadge status={p.phase} /></td>
+                  <td><Link href={`/projects/${p.slug}`}>{p.title}<span className="sr-only"> — view project details</span></Link><div className="meta">{(p.streets ?? []).map((s: any) => s.name).join(', ')}</div></td>
+                  <td><StatusBadge status={p.phase} /><div className="meta">{GROUP_STYLE[groupOf(p.phase)].label.replace(/ \(.*\)/, '')}</div></td>
                   <td>{(p.wards ?? []).map((w: string) => <WardChip key={w} ward={w} />)}{!p.wards?.length && 'Not available'}</td>
                   <td className="num">{p.programYear ?? 'Not available'}</td>
                   <td className="num">{formatCents(p.cost?.estimatedCents)}</td>

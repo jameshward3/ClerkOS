@@ -27,7 +27,7 @@ export default async function Home() {
   ])
   const { emergencies, feature } = selectHomepage(features.docs as any[], notices.docs as any[], now)
   const routine = (notices.docs as any[]).filter((n) => n.kind !== 'emergency').slice(0, 4)
-  const img = feature?.image && typeof feature.image === 'object' && feature.image.approvalStatus === 'approved' && feature.image.locationVerified ? feature.image : null
+  const img = feature?.image && typeof feature.image === 'object' && feature.image.approvalStatus === 'approved' && feature.image.locationVerified && feature.image.verificationStatus === 'verified' && !feature.image.isGenerated ? feature.image : null
 
   return (
     <>
@@ -53,7 +53,14 @@ export default async function Home() {
           </form>
         </div>
         <div className="hero__media">
-          {img ? <img src={img.sizes?.hero?.url ?? img.url} alt={img.alt} style={{ objectPosition: `${img.focalX ?? 50}% ${img.focalY ?? 50}%` }} />
+          {img ? (
+            <picture>
+              {img.sizes?.heroAvif?.url && <source type="image/avif" srcSet={img.sizes.heroAvif.url} />}
+              {img.sizes?.hero?.url && <source type="image/webp" srcSet={img.sizes.hero.url} />}
+              <img src={img.url} alt={img.decorative ? '' : img.alt} width={img.sizes?.hero?.width ?? img.width} height={img.sizes?.hero?.height ?? img.height}
+                loading="eager" fetchPriority="high" style={{ objectPosition: `${img.focalX ?? 50}% ${img.focalY ?? 50}%` }} />
+            </picture>
+          )
             : <div className="hero__placeholder"><p>Photography pending — a licensed, location‑verified photograph of Orange will appear here once approved.</p></div>}
         </div>
       </section>

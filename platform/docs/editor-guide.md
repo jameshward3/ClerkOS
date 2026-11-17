@@ -1,6 +1,15 @@
 # Editor guide (plain language)
 Sign in at **/admin**. You only see what your role allows. Every change is saved as a version and recorded in the audit log.
 
+**Preview:** every item has a **Preview** button (top right). It opens the page as residents would see it, with a
+"Preview — not visible to the public" banner. Only signed-in staff can open previews, and only for items they may read.
+
+**"Before publishing" panel:** the right-hand column warns when an item has no source linked, is unverified, has a
+recorded discrepancy, or is demo content. It doesn't stop you saving; it reminds you what a reviewer will check.
+
+**Broken links:** administrators see a daily report under **Administration → Link checks** (links on services and
+department pages). Fix a broken link in the item that uses it.
+
 **The steps every item goes through:** *Draft* → *In review* → *Approved* → *Scheduled* or *Published* → *Archived*.
 You change the step with **Workflow status** in the right-hand column. If a step isn't allowed for your role, you'll see
 a message explaining why — nothing is changed. "Verification" (right column) is separate: it says whether facts were

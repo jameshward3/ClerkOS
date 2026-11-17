@@ -43,7 +43,7 @@ test('mobile menu opens and navigates by keyboard @mobile', async ({ page, isMob
 
 test('project filters are shareable and survive the map/list toggle', async ({ page }) => {
   await page.goto('/projects')
-  await page.getByLabel('Phase').selectOption('construction')
+  await page.getByRole('combobox', { name: 'Status' }).selectOption('construction')
   await page.getByRole('button', { name: 'Apply filters' }).click()
   await expect(page).toHaveURL(/phase=construction/)
   await expect(page.getByRole('status').first()).toHaveText('1 project match.')

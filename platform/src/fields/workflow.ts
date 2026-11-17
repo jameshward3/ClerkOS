@@ -61,6 +61,10 @@ export const sourceField: Field = {
 
 export const workflowFields = (): Field[] => [
   {
+    name: 'sourceWarning', type: 'ui',
+    admin: { position: 'sidebar', components: { Field: '/components/admin/SourceWarning#SourceWarning' } },
+  },
+  {
     name: 'workflowStatus',
     type: 'select',
     required: true,
@@ -246,6 +250,8 @@ export const withWorkflow = (
   },
   admin: {
     ...config.admin,
+    // Staff-only draft preview (requires a signed-in session; see app/(site)/preview).
+    preview: (doc) => `${process.env.PUBLIC_SITE_URL ?? ''}/preview/${config.slug}/${doc.id}`,
     defaultColumns: config.admin?.defaultColumns ?? ['title', 'workflowStatus', 'verificationStatus', 'updatedAt'],
   },
 }

@@ -7,11 +7,11 @@ import type { Payload, Where } from 'payload'
 import { sumCents } from './money'
 
 export const CATEGORY_META = {
-  public_safety: { label: 'Public safety', color: '#0B2035' },
-  public_works: { label: 'Public works', color: '#54718A' },
-  parks_recreation: { label: 'Parks & recreation', color: '#9A752F' },
-  general_government: { label: 'General government', color: '#737F8C' },
-  other: { label: 'Other', color: '#B8C1CB' },
+  public_safety: { label: 'Public safety', short: 'Safety', color: '#0B2035' },
+  public_works: { label: 'Public works', short: 'Works', color: '#54718A' },
+  parks_recreation: { label: 'Parks & recreation', short: 'Parks', color: '#9A752F' },
+  general_government: { label: 'General government', short: 'Gen. govt', color: '#737F8C' },
+  other: { label: 'Other', short: 'Other', color: '#B8C1CB' },
 } as const
 export type SpendCategory = keyof typeof CATEGORY_META
 export const SPEND_CATEGORIES = Object.keys(CATEGORY_META) as SpendCategory[]
@@ -62,5 +62,23 @@ export async function budgetView(payload: Payload, f: BudgetFilters) {
     funds: [...new Set(lines.map((l) => l.fund))].sort(),
     departments: [...new Set(lines.map((l) => l.department).filter(Boolean) as string[])].sort(),
     anyDemo: datasets.some((d) => d.verificationStatus === 'demo'),
+  }
+}
+
+/**
+ * Capital investment by location (guide §5), from published projects.
+ * Estimated and awarded costs are different measures and are never added together.
+ * Multi-ward projects are reported separately so ward rows are not double-counted.
+ */
+export async function capitalByWard(payload: Payload) {
+  const projects = (await payload.find({ collection: 'projects', limit: 1000, pagination: false, depth: 0, overrideAccess: false, user: null } as any)).docs as any[]
+  const wards = ['north', 'south', 'east', 'west', 'unassigned', 'multiple'] as const
+  const bucket = (p: any) => (!p.wards?.length ? 'unassigned' : p.wards.length > 1 ? 'multiple' : p.wards[0])
+  return {
+    anyDemo: projects.some((p) => p.verificationStatus === 'demo'),
+    rows: wards.map((w) => {
+      const mine = projects.filter((p) => bucket(p) === w)
+      return { ward: w, projects: mine.length, estimatedCents: sumCents(mine.map((p) => p.cost?.estimatedCents)), awardedCents: sumCents(mine.map((p) => p.cost?.awardedCents)), missingEstimates: mine.filter((p) => p.cost?.estimatedCents == null).length }
+    }).filter((r) => r.projects > 0),
   }
 }

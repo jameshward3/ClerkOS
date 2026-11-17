@@ -2,12 +2,14 @@
 /**
  * MapLibre map with an always-available HTML alternative (the list rendered by
  * the page). Basemap tiles come from NEXT_PUBLIC_MAP_STYLE_URL (provider
- * adapter); without one the map draws only our own data on a neutral canvas.
- * Project routes differ from ward fills by line pattern AND color.
+ * adapter); without one the map draws only platform data on a neutral canvas.
+ * Guide §6: project status = line pattern + symbol (not color alone); ward fills
+ * only from verified geometry; unverified maps carry an "Illustrative" banner.
  */
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { GROUP_STYLE, groupOf } from '@/lib/projectStatus'
 
 type FC = { type: 'FeatureCollection'; features: any[] }
 export type MapProps = {
@@ -15,14 +17,21 @@ export type MapProps = {
   projects?: FC
   places?: FC
   wards?: FC | null
-  selectedId?: string | null
-  onSelect?: (id: string) => void
   linkBase?: string
+  placesLinkBase?: string
+  /** True when any drawn geometry is not verified. */
+  illustrative?: boolean
 }
 
-const PHASE_DASH: Record<string, number[]> = { planned: [1, 2], design: [3, 2], bidding: [3, 2], awarded: [3, 2], construction: [1, 0], substantially_complete: [6, 2], closed_out: [6, 2] }
+const WORK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>'
+const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
 
-export function CivicMap({ label, projects, places, wards, linkBase }: MapProps) {
+const midpoint = (g: any): [number, number] | null => {
+  const coords = g.type === 'LineString' ? g.coordinates : g.type === 'MultiLineString' ? g.coordinates.flat() : g.type === 'Point' ? [g.coordinates] : null
+  return coords?.length ? coords[Math.floor(coords.length / 2)] : null
+}
+
+export function CivicMap({ label, projects, places, wards, linkBase, placesLinkBase, illustrative }: MapProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -40,48 +49,77 @@ export function CivicMap({ label, projects, places, wards, linkBase }: MapProps)
           container: ref.current,
           style: styleUrl || { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#EEF1F4' } }] },
           center: [-74.233, 40.770], zoom: 13.4, attributionControl: { compact: false },
-          cooperativeGestures: true,
+          cooperativeGestures: true, // no forced scroll capture
         })
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
+        const bounds = new maplibregl.LngLatBounds()
         map.on('load', () => {
           if (wards?.features.length) {
             map.addSource('wards', { type: 'geojson', data: wards })
-            map.addLayer({ id: 'ward-fill', type: 'fill', source: 'wards', paint: { 'fill-color': ['match', ['get', 'ward'], 'north', '#DCE8F2', 'south', '#F3E7CA', 'east', '#D9ECE8', 'west', '#EADDE6', '#eee'], 'fill-opacity': 0.7 } })
-            map.addLayer({ id: 'ward-line', type: 'line', source: 'wards', paint: { 'line-color': '#526171', 'line-width': 1.5 } })
+            map.addLayer({ id: 'ward-fill', type: 'fill', source: 'wards', paint: { 'fill-color': ['match', ['get', 'ward'], 'north', '#5688B0', 'south', '#C49A43', 'east', '#438F88', 'west', '#956582', '#ccc'], 'fill-opacity': 0.35 } })
+            map.addLayer({ id: 'ward-line', type: 'line', source: 'wards', paint: { 'line-color': '#0B2035', 'line-width': 1.5 } })
           }
           if (projects?.features.length) {
-            map.addSource('projects', { type: 'geojson', data: projects })
-            for (const [phase, dash] of Object.entries(PHASE_DASH)) {
-              map.addLayer({ id: `proj-${phase}`, type: 'line', source: 'projects', filter: ['==', ['get', 'phase'], phase],
-                layout: { 'line-cap': 'butt' },
-                paint: { 'line-color': ['case', ['==', ['get', 'phase'], 'construction'], '#0B2035', ['in', ['get', 'phase'], ['literal', ['closed_out', 'substantially_complete']]], '#24664E', '#70551F'], 'line-width': 6, 'line-dasharray': dash } })
+            const data = { ...projects, features: projects.features.map((f: any) => ({ ...f, properties: { ...f.properties, group: groupOf(f.properties.phase) } })) }
+            map.addSource('projects', { type: 'geojson', data })
+            for (const [group, st] of Object.entries(GROUP_STYLE)) {
+              map.addLayer({ id: `proj-${group}`, type: 'line', source: 'projects', filter: ['==', ['get', 'group'], group],
+                paint: { 'line-color': st.color, 'line-width': 6, ...(st.dash ? { 'line-dasharray': st.dash } : {}) } })
+            }
+            for (const f of data.features) {
+              const st = GROUP_STYLE[f.properties.group as keyof typeof GROUP_STYLE]
+              const mid = midpoint(f.geometry)
+              ;(f.geometry.type === 'LineString' ? f.geometry.coordinates : []).forEach((c: [number, number]) => bounds.extend(c))
+              if (st.symbol && mid) {
+                const el = document.createElement('div')
+                el.className = 'map-marker'
+                el.style.background = st.color
+                el.setAttribute('aria-hidden', 'true') // the list carries the same information
+                el.innerHTML = st.symbol === 'work' ? WORK : CHECK
+                if (linkBase && f.properties.slug) el.addEventListener('click', () => router.push(`${linkBase}/${f.properties.slug}`))
+                new maplibregl.Marker({ element: el }).setLngLat(mid).addTo(map)
+              }
             }
             map.on('click', (e: any) => {
-              const f = map.queryRenderedFeatures(e.point).find((x: any) => x.properties?.slug)
+              const f = map.queryRenderedFeatures(e.point).find((x: any) => x.layer.id.startsWith('proj-') && x.properties?.slug)
               if (f && linkBase) router.push(`${linkBase}/${f.properties.slug}`)
             })
-            const bounds = new maplibregl.LngLatBounds()
-            projects.features.forEach((f: any) => (f.geometry.coordinates.flat ? f.geometry.coordinates : []).forEach((c: any) => Array.isArray(c[0]) ? c.forEach((cc: any) => bounds.extend(cc)) : bounds.extend(c)))
-            if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 })
           }
           if (places?.features.length) {
             map.addSource('places', { type: 'geojson', data: places })
             map.addLayer({ id: 'places', type: 'circle', source: 'places', paint: { 'circle-radius': 8, 'circle-color': ['match', ['get', 'jurisdiction'], 'municipal', '#0B2035', '#FFFFFF'], 'circle-stroke-color': '#0B2035', 'circle-stroke-width': 3 } })
-            map.on('click', 'places', (e: any) => { const s = e.features?.[0]?.properties?.slug; if (s && linkBase) router.push(`${linkBase}/${s}`) })
+            places.features.forEach((f: any) => bounds.extend(f.geometry.coordinates))
+            map.on('click', 'places', (e: any) => { const s = e.features?.[0]?.properties?.slug; const base = placesLinkBase ?? linkBase; if (s && base) router.push(`${base}/${s}`) })
           }
+          if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 })
         })
       } catch {
         setError('The interactive map could not load. All information is available in the list.')
       }
     })()
     return () => { cancelled = true; map?.remove() }
-  }, [projects, places, wards, linkBase, router])
+  }, [projects, places, wards, linkBase, placesLinkBase, router])
 
   return (
-    <figure style={{ margin: 0 }}>
+    <figure style={{ margin: 0, position: 'relative' }}>
+      {illustrative && <p className="map-banner" role="note">Illustrative map — not for address or ward determination</p>}
       <div ref={ref} className="map-frame" role="region" aria-label={`${label} (interactive map; the same information is in the list)`} />
       {error && <p role="status" className="alert alert--warning">{error}</p>}
       {!process.env.NEXT_PUBLIC_MAP_STYLE_URL && <figcaption className="meta">Basemap not configured in this environment — only platform data is drawn. See docs/operations.md (map tile provider).</figcaption>}
     </figure>
+  )
+}
+
+export function ProjectLegend() {
+  return (
+    <ul className="map-legend" aria-label="Project status legend" style={{ listStyle: 'none', padding: 0 }}>
+      {Object.values(GROUP_STYLE).map((st) => (
+        <li key={st.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <svg width="40" height="12" aria-hidden="true"><line x1="0" y1="6" x2="40" y2="6" stroke={st.color} strokeWidth="5" strokeDasharray={st.dash ? st.dash.map((d) => d * 5).join(' ') : undefined} /></svg>
+          {st.symbol && <span className="map-marker" style={{ background: st.color, width: 20, height: 20 }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: st.symbol === 'work' ? WORK : CHECK }} />}
+          {st.label}
+        </li>
+      ))}
+    </ul>
   )
 }

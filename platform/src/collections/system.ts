@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto'
 import type { CollectionConfig } from 'payload'
+import { verificationField } from '../fields/workflow'
 import { adminOnly, hasRole, isAdmin, nobody, ROLE_LABELS, ROLES, staffOnly, userOf } from '../access/roles'
 
 import { proxyStrategy } from '../auth/proxyStrategy'
@@ -58,20 +60,47 @@ export const Users: CollectionConfig = {
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  admin: { group: 'Content', useAsTitle: 'alt', defaultColumns: ['filename', 'alt', 'approvalStatus', 'locationVerified'] },
+  admin: { group: 'Content', useAsTitle: 'alt', defaultColumns: ['filename', 'kind', 'alt', 'approvalStatus', 'verificationStatus'],
+    description: 'Asset manifest (style guide §2). Approval (may it be used?) and verification (are its facts — location, rights — confirmed?) are separate.' },
   access: { read: () => true, create: staffOnly, update: staffOnly, delete: ({ req }) => hasRole(userOf(req), 'publisher', 'administrator') },
   upload: {
     // SVG is deliberately not accepted: SVGs must be sanitized offline before entering the asset pipeline.
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
     focalPoint: true,
+    // The uploaded original is preserved unchanged; only derivatives are re-encoded (hero 16:9, card 4:3).
     imageSizes: [
-      { name: 'card', width: 640, height: 400, position: 'centre', formatOptions: { format: 'webp' } },
+      { name: 'card', width: 640, height: 480, position: 'centre', formatOptions: { format: 'webp' } },
+      { name: 'cardAvif', width: 640, height: 480, position: 'centre', formatOptions: { format: 'avif' } },
       { name: 'hero', width: 1600, height: 900, position: 'centre', formatOptions: { format: 'webp' } },
+      { name: 'heroAvif', width: 1600, height: 900, position: 'centre', formatOptions: { format: 'avif' } },
     ],
-    formatOptions: { format: 'webp' },
+  },
+  hooks: {
+    beforeChange: [async ({ data, req, originalDoc }) => {
+      // Checksum of the original file (manifest requirement).
+      const file = (req as any).file as { data?: Buffer } | undefined
+      if (file?.data) data.checksumSha256 = createHash('sha256').update(file.data).digest('hex')
+      // Record who approved and when; clear on un-approval.
+      if (data.approvalStatus && data.approvalStatus !== originalDoc?.approvalStatus) {
+        const u = userOf(req)
+        if (data.approvalStatus === 'approved') { data.approvedBy = u?.id; data.approvedAt = new Date().toISOString() }
+        else { data.approvedBy = null; data.approvedAt = null }
+      }
+      return data
+    }],
   },
   fields: [
-    { name: 'alt', type: 'text', required: true, admin: { description: 'Describe what the image shows for people who cannot see it. Not "image of…".' } },
+    {
+      name: 'kind', type: 'select', required: true, defaultValue: 'photo',
+      options: [{ label: 'Photograph', value: 'photo' }, { label: 'Official seal / logo', value: 'seal' }, { label: 'Illustration / graphic', value: 'illustration' }, { label: 'Document scan', value: 'document' }],
+    },
+    { name: 'decorative', type: 'checkbox', defaultValue: false, admin: { description: 'Purely decorative (conveys no information). Decorative images use empty alt text.' } },
+    {
+      name: 'alt', type: 'text',
+      admin: { description: 'Describe what the image shows for people who cannot see it. Not "image of…". Leave empty only for decorative images.' },
+      validate: (v: unknown, { data }: any) => (data?.decorative ? true : (typeof v === 'string' && v.trim().length >= 5) || 'Alt text is required unless the image is decorative.'),
+    },
+    { name: 'captureDate', type: 'date', admin: { description: 'When the photo was taken, if known.' } },
     { name: 'credit', type: 'text' },
     { name: 'rightsHolder', type: 'text', required: true },
     { name: 'license', type: 'text', required: true, admin: { description: 'e.g. "City-owned", "CC BY 4.0", "Licensed from …"' } },
@@ -84,6 +113,10 @@ export const Media: CollectionConfig = {
       options: ['pending', 'approved', 'rejected'].map((v) => ({ label: v, value: v })),
       access: { update: ({ req }) => hasRole(userOf(req), 'publisher', 'administrator') },
     },
+    { name: 'approvedBy', type: 'relationship', relationTo: 'users', admin: { readOnly: true, position: 'sidebar' } },
+    { name: 'approvedAt', type: 'date', admin: { readOnly: true, position: 'sidebar' } },
+    { name: 'checksumSha256', type: 'text', admin: { readOnly: true, position: 'sidebar', description: 'SHA-256 of the uploaded original.' } },
+    verificationField,
   ],
 }
 
@@ -198,5 +231,22 @@ export const Redirects: CollectionConfig = {
     { name: 'to', type: 'text', required: true },
     { name: 'statusCode', type: 'select', defaultValue: '301', options: ['301', '302', '410'].map((v) => ({ label: v, value: v })) },
     { name: 'sourceUrl', type: 'text' },
+  ],
+}
+
+/** Link-check report (written only by the worker). One row per URL. */
+export const LinkChecks: CollectionConfig = {
+  slug: 'link-checks',
+  admin: { group: 'Administration', useAsTitle: 'url', defaultColumns: ['url', 'status', 'httpStatus', 'checkedAt', 'referencedBy'],
+    description: 'Daily check of links entered by editors (services, departments). Fix broken links in the referencing item.' },
+  access: { read: staffOnly, create: nobody, update: nobody, delete: adminOnly },
+  fields: [
+    { name: 'url', type: 'text', required: true, unique: true, index: true },
+    { name: 'status', type: 'select', required: true, options: ['ok', 'broken', 'blocked', 'error'].map((v) => ({ label: v, value: v })) },
+    { name: 'httpStatus', type: 'number' },
+    { name: 'finalUrl', type: 'text' },
+    { name: 'detail', type: 'text' },
+    { name: 'checkedAt', type: 'date', required: true },
+    { name: 'referencedBy', type: 'text', admin: { description: 'Where the link is used.' } },
   ],
 }

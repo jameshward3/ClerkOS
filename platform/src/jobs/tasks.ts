@@ -9,6 +9,7 @@ import { runImport } from '../lib/imports'
 import { sendMail } from '../lib/mail'
 import { indexDoc, isPubliclyVisible, removeDoc } from '../lib/search'
 import { q } from '../lib/db'
+import { checkLink } from '../lib/linkcheck'
 
 export async function publicationSweep(payload: Payload, now = new Date()) {
   const iso = now.toISOString()
@@ -91,3 +92,28 @@ export const tasks: TaskConfig[] = [
     outputSchema: [{ name: 'result', type: 'text' }],
     handler: async ({ input, req }: any) => ({ output: { result: await runImport(req.payload, Number(input.batchId), input.action) } }) },
 ] as TaskConfig[]
+
+export async function checkEditorLinks(payload: Payload, check = checkLink) {
+  const refs = new Map<string, string[]>()
+  const add = (url: unknown, where: string) => { if (typeof url === 'string' && url) refs.set(url, [...(refs.get(url) ?? []), where]) }
+  const services = await payload.find({ collection: 'services', depth: 0, limit: 0, pagination: false, overrideAccess: true })
+  services.docs.forEach((s: any) => add(s.externalUrl, `services/${s.slug}`))
+  const depts = await payload.find({ collection: 'departments', depth: 0, limit: 0, pagination: false, overrideAccess: true })
+  depts.docs.forEach((d: any) => add(d.officialUrl, `departments/${d.slug}`))
+  const summary = { ok: 0, broken: 0, blocked: 0, error: 0 }
+  for (const [url, where] of refs) {
+    const r = await check(url)
+    summary[r.status]++
+    const data = { url, status: r.status, httpStatus: r.httpStatus ?? null, finalUrl: r.finalUrl ?? null, detail: r.detail ?? null, checkedAt: new Date().toISOString(), referencedBy: where.join(', ') }
+    const existing = await payload.find({ collection: 'link-checks', where: { url: { equals: url } }, limit: 1, depth: 0, overrideAccess: true })
+    if (existing.docs[0]) await payload.update({ collection: 'link-checks', id: existing.docs[0].id, data, overrideAccess: true })
+    else await payload.create({ collection: 'link-checks', data, overrideAccess: true })
+  }
+  return summary
+}
+
+tasks.push({
+  slug: 'checkLinks', retries: 1, schedule: [{ cron: '41 6 * * *', queue: 'maintenance' }],
+  outputSchema: [{ name: 'ok', type: 'number' }, { name: 'broken', type: 'number' }, { name: 'blocked', type: 'number' }, { name: 'error', type: 'number' }],
+  handler: async ({ req }: any) => ({ output: await checkEditorLinks(req.payload) }),
+} as unknown as TaskConfig)

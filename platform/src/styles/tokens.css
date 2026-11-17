@@ -36,5 +36,16 @@
   --max: 1440px; --gutter: 16px; --radius: 2px; --radius-badge: 999px;
   --control-h: 48px; --touch: 44px;
 }
+/* Guide §11 token names (canonical in the style guide) mapped onto the values above. */
+:root {
+  --brand-navy: var(--navy); --brand-gold: var(--gold); --gold-ink: var(--gold-text);
+  --surface: var(--surface-cool); --border: var(--divider); --border-control: var(--control-border);
+  --danger: var(--error); --danger-bg: var(--error-bg);
+  --ward-north-light: var(--ward-north-fill); --ward-south-light: var(--ward-south-fill);
+  --ward-east-light: var(--ward-east-fill); --ward-west-light: var(--ward-west-fill);
+  --font-ui: var(--font); --content-max: 90rem; --radius-control: 0.25rem;
+  /* Project status (guide §6) — never ward colors */
+  --status-planning: #0B2035; --status-scheduled: #70551F; --status-active: #0E6B66; --status-complete: #0B2035;
+}
 @media (min-width: 640px) { :root { --gutter: 32px; } }
 @media (min-width: 1024px) { :root { --gutter: 48px; } }

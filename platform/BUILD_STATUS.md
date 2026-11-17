@@ -16,7 +16,15 @@ _Last updated 2026-11-17. Branch `claude/orange-township-platform-o9f049`._
 - Worker + jobs: publication sweep, outbox with dedupe/retry/suppression, search reconcile, CSV import pipeline.
 - Security: CSP + headers, rate limits (hashed keys), CSRF via server actions/Payload csrf list, formula-safe CSV,
   sanitized search snippets, private upload dir, SVG uploads rejected, identity-proxy auth strategy for production.
-- Tests: 34 int/unit, 51 browser (axe on 16 pages × 2 viewports). Build, lint, typecheck clean. Backup/restore drilled.
+- Tests: 71 int/unit, 61 browser (axe on 16 pages × 2 viewports, forced colors, 200% zoom). Build, lint, typecheck clean. Backup/restore drilled.
+
+## Style-guide conformance pass (after the guide was supplied)
+Guide committed as docs/Orange_Agentic_Style_Guide.md; item-by-item status in docs/style-guide-conformance.md.
+Added: guide token names, type weights, focus rings (light/navy/forced-colors), compact mobile header, illustrative map
+banner, guide project status styles with symbols, explorer layers incl. street projects, list-first mobile maps,
+direct chart labels + keyboard tooltips, capital investment by location, media manifest fields (checksum, approval
+stamps, verification, AVIF), originals no longer re-encoded, staff previews, SSRF-guarded link checks, source warnings.
+Migration: src/migrations/20261117_224506_style_guide_conformance.
 
 ## Not done / open (see docs/production-checklist.md)
 - Official seal, photography, ward/municipal GIS, real content migration (only City Hall facts verified).

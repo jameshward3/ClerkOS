@@ -35,6 +35,8 @@ pnpm build
 | [BUILD_STATUS.md](BUILD_STATUS.md) | What is done, what is not, commands run |
 | [docs/architecture.md](docs/architecture.md) | Stack, topology, data boundaries, workflow, jobs, auth, caching |
 | [docs/permission-matrix.md](docs/permission-matrix.md) | Roles × capabilities |
+| [docs/Orange_Agentic_Style_Guide.md](docs/Orange_Agentic_Style_Guide.md) | Design & content contract |
+| [docs/style-guide-conformance.md](docs/style-guide-conformance.md) | Requirement-by-requirement status |
 | [docs/design-system.md](docs/design-system.md) | Tokens and components |
 | [docs/editor-guide.md](docs/editor-guide.md) | Plain-language walkthroughs (holiday notice, agenda, milestone, budget import, image) |
 | [docs/api.md](docs/api.md) | Routes, server actions, data dictionaries |

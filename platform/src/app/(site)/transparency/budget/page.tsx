@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, Download } from 'lucide-react'
 import { SimpleBars, StackedYears } from '@/components/BudgetChart'
 import { DemoFlag, Empty, human } from '@/components/ui'
-import { budgetView, CATEGORY_META, SPEND_CATEGORIES } from '@/lib/budget'
+import { budgetView, capitalByWard, CATEGORY_META, SPEND_CATEGORIES } from '@/lib/budget'
 import { formatCents, pct } from '@/lib/money'
 import { parseBudgetParams } from '@/lib/budgetParams'
 import { qs, type SP } from '@/lib/params'
@@ -14,7 +14,8 @@ export const metadata = { title: 'Budget' }
 
 export default async function Budget({ searchParams }: { searchParams: SP }) {
   const f = parseBudgetParams(await searchParams)
-  const v = await budgetView(await getClient(), f)
+  const payload = await getClient()
+  const [v, cap] = await Promise.all([budgetView(payload, f), capitalByWard(payload)])
   const focus = v.byYear.filter((r) => r.fiscalYear === v.focusYear)
   const focusTotal = focus[0]?.total ?? null
   const params = { year: f.year ? String(f.year) : undefined, basis: f.basis, kind: f.kind === 'operating' ? undefined : f.kind, fund: f.fund, department: f.department, category: f.category }
@@ -30,6 +31,7 @@ export default async function Budget({ searchParams }: { searchParams: SP }) {
           <li><Link href="/transparency/budget" aria-current="page">Overview <ArrowRight size={18} aria-hidden="true" /></Link></li>
           <li><Link href="#revenues">Revenues</Link></li>
           <li><Link href="#expenditures">Expenditures</Link></li>
+          <li><Link href="#capital">Capital by location</Link></li>
           <li><Link href="/transparency/budget?kind=capital">Capital budget</Link></li>
           <li><Link href="/projects">Capital projects</Link></li>
           <li><Link href="/transparency/budget/datasets">Datasets &amp; dictionary</Link></li>
@@ -51,7 +53,7 @@ export default async function Budget({ searchParams }: { searchParams: SP }) {
           <div className="field"><label htmlFor="category">Category</label><select id="category" name="category" defaultValue={f.category ?? ''}><option value="">All</option>{SPEND_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_META[c].label}</option>)}</select></div>
           <button className="btn" type="submit">Apply</button>
         </form>
-        <p className="meta">Updated: {latestUpdate ? fmtShortDate(latestUpdate) : 'Not available'} · Source: {v.datasets[0]?.sourceDescription ?? 'Not available'} · Units: US dollars (nominal) · <a className="cta-link" href={`/data/budget.csv${qs(params, {})}`}><Download size={16} aria-hidden="true" /> Download this data (CSV)</a></p>
+        <p className="meta">Updated: {latestUpdate ? fmtShortDate(latestUpdate) : 'Not available'} · Source: {v.datasets[0]?.sourceDescription ?? 'Not available'} · Verification: {v.datasets.length === 0 ? 'Not available' : v.anyDemo ? 'Illustrative sample data — not verified' : v.datasets.every((d) => d.verificationStatus === 'verified') ? 'Verified against official source' : 'Not yet verified'} · Units: US dollars (nominal), rounded to the dollar in charts ·<a className="cta-link" href={`/data/budget.csv${qs(params, {})}`}><Download size={16} aria-hidden="true" /> Download this data (CSV)</a></p>
 
         {v.datasets.length === 0 ? <Empty title="No published datasets match these filters.">
           <p>{f.kind !== 'operating' ? `No ${human(f.kind).toLowerCase()} data has been published yet.` : ''} <Link href="/transparency/budget">Reset filters</Link></p></Empty> : <>
@@ -86,6 +88,22 @@ export default async function Budget({ searchParams }: { searchParams: SP }) {
                 <tbody>{v.revenueMix.map((m) => { const tot = v.revenueMix.reduce((a, x) => a + (x.cents ?? 0), 0); return <tr key={m.key}><th scope="row">{m.label}</th><td className="num">{formatCents(m.cents)}</td><td className="num">{pct(m.cents, tot) ?? 'Not available'}{pct(m.cents, tot) != null ? '%' : ''}</td></tr> })}</tbody>
               </table>
             </div>
+          </section>
+
+          <section id="capital" aria-labelledby="cap-h" className="panel" style={{ background: 'var(--white)', marginTop: 24 }}>
+            <h2 id="cap-h">Capital investment by location</h2>
+            <p>From published street and infrastructure projects. Estimated cost and contract award are different measures and are not added together. Projects in more than one ward are listed once under &ldquo;More than one ward&rdquo;. <DemoFlag show={cap.anyDemo} text="Includes illustrative projects" /></p>
+            {cap.rows.length === 0 ? <p>No published projects yet.</p> : <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
+              <caption>Published projects by ward</caption>
+              <thead><tr><th scope="col">Location</th><th scope="col" className="num">Projects</th><th scope="col" className="num">Estimated cost</th><th scope="col" className="num">Contract awards</th></tr></thead>
+              <tbody>{cap.rows.map((r) => (
+                <tr key={r.ward}><th scope="row">{r.ward === 'multiple' ? 'More than one ward' : r.ward === 'unassigned' ? 'Ward not assigned' : `${human(r.ward)} Ward`}</th>
+                  <td className="num">{r.projects}</td>
+                  <td className="num">{formatCents(r.estimatedCents)}{r.missingEstimates > 0 && <span className="meta"> ({r.missingEstimates} without estimate)</span>}</td>
+                  <td className="num">{formatCents(r.awardedCents)}</td></tr>
+              ))}</tbody>
+            </table></div>}
+            <p className="meta">Ward assignments come from project records, not from map geometry. <Link href="/projects">View project details</Link></p>
           </section>
 
           <section aria-labelledby="follow" style={{ marginTop: 32 }}>

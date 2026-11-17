@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
       { source: '/((?!admin|api).*)', headers: [{ key: 'Content-Security-Policy', value: csp }] },
       // Never cache staff/admin/API responses in shared caches.
       { source: '/admin/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] },
+      { source: '/preview/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }, { key: 'X-Robots-Tag', value: 'noindex, nofollow' }] },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] },
     ]
   },
