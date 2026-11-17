@@ -21,7 +21,30 @@ export type MapProps = {
   placesLinkBase?: string
   /** True when any drawn geometry is not verified. */
   illustrative?: boolean
+  /** Official municipal boundary (drawn as a dashed outline with the outside greyed). */
+  boundary?: { geometry: { type: string; coordinates: any }; custodian: string; verification: string } | null
 }
+
+/**
+ * Basemap: NEXT_PUBLIC_MAP_STYLE_URL (vector style) wins; otherwise NEXT_PUBLIC_BASEMAP
+ * = 'osm' (default; OpenStreetMap standard tiles, as on the project owner's paving map) or 'none'.
+ * OSM's tile servers are for light use only — production needs a provider (docs/operations.md).
+ */
+function baseStyle(): any {
+  const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL
+  if (styleUrl) return styleUrl
+  const bg = { id: 'bg', type: 'background', paint: { 'background-color': '#EEF1F4' } }
+  if (process.env.NEXT_PUBLIC_BASEMAP === 'none') return { version: 8, sources: {}, layers: [bg] }
+  return {
+    version: 8,
+    sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' } },
+    // Slightly desaturated so platform data stays legible (guide §6: neutral, low-saturation basemap).
+    layers: [bg, { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-saturation': -0.35 } }],
+  }
+}
+
+const outerRings = (g: { type: string; coordinates: any }) => (g.type === 'Polygon' ? [g.coordinates[0]] : g.type === 'MultiPolygon' ? g.coordinates.map((p: any) => p[0]) : [])
 
 const WORK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>'
 const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
@@ -31,7 +54,7 @@ const midpoint = (g: any): [number, number] | null => {
   return coords?.length ? coords[Math.floor(coords.length / 2)] : null
 }
 
-export function CivicMap({ label, projects, places, wards, linkBase, placesLinkBase, illustrative }: MapProps) {
+export function CivicMap({ label, projects, places, wards, linkBase, placesLinkBase, illustrative, boundary }: MapProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -44,16 +67,24 @@ export function CivicMap({ label, projects, places, wards, linkBase, placesLinkB
         const maplibregl = await import('maplibre-gl')
         if (cancelled || !ref.current) return
         maplibregl.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs')
-        const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL
         map = new maplibregl.Map({
           container: ref.current,
-          style: styleUrl || { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#EEF1F4' } }] },
+          style: baseStyle(),
           center: [-74.233, 40.770], zoom: 13.4, attributionControl: { compact: false },
           cooperativeGestures: true, // no forced scroll capture
         })
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
         const bounds = new maplibregl.LngLatBounds()
         map.on('load', () => {
+          if (boundary) {
+            // Same treatment as the project owner's paving map: grey outside the city, dashed navy outline.
+            const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]]
+            map.addSource('city-mask', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [world, ...outerRings(boundary.geometry)] } } })
+            map.addLayer({ id: 'city-mask', type: 'fill', source: 'city-mask', paint: { 'fill-color': '#8A929D', 'fill-opacity': 0.5 } })
+            map.addSource('city', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: boundary.geometry }, attribution: 'Boundary: U.S. Census Bureau (City of Orange township)' })
+            map.addLayer({ id: 'city-line', type: 'line', source: 'city', paint: { 'line-color': '#132538', 'line-width': 2.5, 'line-dasharray': [2.8, 2] } })
+            outerRings(boundary.geometry).flat().forEach((c: [number, number]) => bounds.extend(c))
+          }
           if (wards?.features.length) {
             map.addSource('wards', { type: 'geojson', data: wards })
             map.addLayer({ id: 'ward-fill', type: 'fill', source: 'wards', paint: { 'fill-color': ['match', ['get', 'ward'], 'north', '#5688B0', 'south', '#C49A43', 'east', '#438F88', 'west', '#956582', '#ccc'], 'fill-opacity': 0.35 } })
@@ -98,14 +129,17 @@ export function CivicMap({ label, projects, places, wards, linkBase, placesLinkB
       }
     })()
     return () => { cancelled = true; map?.remove() }
-  }, [projects, places, wards, linkBase, placesLinkBase, router])
+  }, [projects, places, wards, boundary, linkBase, placesLinkBase, router])
 
   return (
     <figure style={{ margin: 0, position: 'relative' }}>
       {illustrative && <p className="map-banner" role="note">Illustrative map — not for address or ward determination</p>}
       <div ref={ref} className="map-frame" role="region" aria-label={`${label} (interactive map; the same information is in the list)`} />
       {error && <p role="status" className="alert alert--warning">{error}</p>}
-      {!process.env.NEXT_PUBLIC_MAP_STYLE_URL && <figcaption className="meta">Basemap not configured in this environment — only platform data is drawn. See docs/operations.md (map tile provider).</figcaption>}
+      <figcaption className="meta">
+        {boundary ? <>Dashed line: City of Orange township boundary ({boundary.verification === 'verified' ? 'official record' : 'unverified'}, {boundary.custodian.split(' —')[0]}); areas outside the City are greyed. </> : null}
+        {process.env.NEXT_PUBLIC_BASEMAP === 'none' && !process.env.NEXT_PUBLIC_MAP_STYLE_URL ? 'Basemap off in this environment — only platform data is drawn.' : 'Street basemap © OpenStreetMap contributors.'}
+      </figcaption>
     </figure>
   )
 }

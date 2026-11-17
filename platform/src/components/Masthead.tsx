@@ -39,8 +39,10 @@ export function Masthead({ s, locale }: { s: Strings; locale: 'en' | 'es' }) {
   return (
     <header className="masthead">
       <div className="container masthead__inner">
-        {/* Text wordmark: an authenticated official seal file has not been supplied (see docs/asset-manifest.md). */}
+        {/* Official seal from orangenj.gov, unmodified (docs/asset-manifest.json). Decorative here: the text names the City. */}
         <Link href="/" className="wordmark">
+          <img className="wordmark__seal" src="/assets/brand/city-seal.png" alt="" width={80} height={80} />
+          <span className="wordmark__rule" aria-hidden="true" />
           <span className="wordmark__text">
             <span className="wordmark__small">CITY OF</span>
             <span className="wordmark__name">ORANGE TOWNSHIP</span>

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { CivicMap } from '@/components/CivicMap'
 import { DemoFlag, Notice, PageBand, WardChip, human } from '@/components/ui'
-import { placesGeoJSON } from '@/lib/gis'
+import { municipalGeoJSON, placesGeoJSON } from '@/lib/gis'
 import { getClient } from '@/lib/payload'
 import { findOnePublic } from '@/lib/public'
 
@@ -12,7 +12,8 @@ export default async function Place({ params }: { params: Promise<{ slug: string
   const { slug } = await params
   const p = await findOnePublic('places', { slug: { equals: slug } }, { depth: 1 })
   if (!p) notFound()
-  const pts = await placesGeoJSON(await getClient(), [p])
+  const payload = await getClient()
+  const [pts, boundary] = await Promise.all([placesGeoJSON(payload, [p]), municipalGeoJSON(payload)])
   return (
     <>
       <PageBand eyebrow={human(p.kind)} title={p.name} crumbs={[{ href: '/', label: 'Home' }, { href: '/explore', label: 'Explore Orange' }, { label: p.name }]} />
@@ -22,7 +23,7 @@ export default async function Place({ params }: { params: Promise<{ slug: string
           {p.summary && <p className="lede">{p.summary}</p>}
           {p.jurisdiction !== 'municipal' && <Notice tone="info" title={`Operated by ${JUR[p.jurisdiction]}`}>The City does not operate this place. Contact {JUR[p.jurisdiction]} for permits, maintenance, and hours.</Notice>}
           {p.history && <><h2>History</h2><p>{p.history}</p></>}
-          {pts.features.length > 0 && <CivicMap label={`Location of ${p.name}`} places={pts as any} />}
+          {pts.features.length > 0 && <CivicMap label={`Location of ${p.name}`} places={pts as any} boundary={boundary} illustrative={p.verificationStatus !== 'verified'} />}
           {p.verificationStatus !== 'verified' && pts.features.length > 0 && <p className="meta">Map position is approximate and has not been verified.</p>}
         </div>
         <aside className="panel">

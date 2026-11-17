@@ -4,7 +4,7 @@ import { CivicMap, ProjectLegend } from '@/components/CivicMap'
 import { DemoFlag, Empty, Notice, PageBand, StatusBadge, WardChip, human } from '@/components/ui'
 import { WardLookup } from '@/components/WardLookup'
 import { CITY_HALL } from '@/lib/facts'
-import { placesGeoJSON, projectGeoJSON, wardGeoJSON } from '@/lib/gis'
+import { municipalGeoJSON, placesGeoJSON, projectGeoJSON, wardGeoJSON } from '@/lib/gis'
 import { one, pick, qs, type SP } from '@/lib/params'
 import { getClient } from '@/lib/payload'
 import { findPublic } from '@/lib/public'
@@ -42,7 +42,7 @@ export default async function Explore({ searchParams }: { searchParams: SP }) {
   ])
   const places = placesRes.docs as any[]
   const projects = projectsRes.docs as any[]
-  const [pts, proj] = await Promise.all([placesGeoJSON(payload, places), projectGeoJSON(payload, projects.map((p) => p.id))])
+  const [pts, proj, boundary] = await Promise.all([placesGeoJSON(payload, places), projectGeoJSON(payload, projects.map((p) => p.id)), municipalGeoJSON(payload)])
   const byId = new Map(projects.map((p) => [p.id, p]))
   proj.features.forEach((ft: any) => { const p = byId.get(ft.properties.projectId); ft.properties.phase = p?.phase; ft.properties.slug = p?.slug })
   const verifiedWards = wards?.verification === 'verified' ? wards.fc : null
@@ -110,7 +110,7 @@ export default async function Explore({ searchParams }: { searchParams: SP }) {
         {view !== 'list' && !nothing && <>
           {view === 'default' && <Link className="btn btn--secondary map-toggle" href={`/explore${layerQs({ view: 'map' })}`}>Show map</Link>}
           <div className={view === 'default' ? 'map-optional' : undefined}>
-            <CivicMap label="Places and street projects" places={pts as any} projects={proj as any} wards={verifiedWards as any} linkBase="/projects" placesLinkBase="/explore/places" illustrative={illustrative} />
+            <CivicMap label="Places and street projects" places={pts as any} projects={proj as any} wards={verifiedWards as any} boundary={boundary} linkBase="/projects" placesLinkBase="/explore/places" illustrative={illustrative} />
             <div className="map-legend"><span><i style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--navy)', display: 'inline-block' }} aria-hidden="true" />City-operated place</span><span><i style={{ width: 14, height: 14, borderRadius: '50%', border: '3px solid var(--navy)', display: 'inline-block' }} aria-hidden="true" />Operated by another agency</span></div>
             {projects.length > 0 && <ProjectLegend />}
           </div>

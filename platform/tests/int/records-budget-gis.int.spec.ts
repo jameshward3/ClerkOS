@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Payload } from 'payload'
 import { budgetView } from '@/lib/budget'
 import { toCsv } from '@/lib/csv'
@@ -134,10 +134,18 @@ Current,Tax Collector,Property taxes,9-01,Levy,"900,000",revenue
 describe('ward lookup', () => {
   const sq = (x0: number, y0: number, x1: number, y1: number) => `MULTIPOLYGON(((${x0} ${y0},${x1} ${y0},${x1} ${y1},${x0} ${y1},${x0} ${y0})))`
   const pool = () => (payload.db as any).pool
+  const created: number[] = []
   async function version(kind: string, verification: string) {
     const r = await pool().query(`INSERT INTO civic.boundary_versions (kind,label,custodian,source_crs,verification,effective_from) VALUES ($1,'test','Test custodian','EPSG:4326',$2,'2000-01-01') RETURNING id`, [kind, verification])
+    created.push(r.rows[0].id)
     return r.rows[0].id as number
   }
+  afterAll(async () => {
+    // Synthetic test geometry must not leak into other specs.
+    await pool().query('DELETE FROM civic.ward_geometries WHERE boundary_version_id = ANY($1::int[])', [created])
+    await pool().query('DELETE FROM civic.municipal_geometries WHERE boundary_version_id = ANY($1::int[])', [created])
+    await pool().query('DELETE FROM civic.boundary_versions WHERE id = ANY($1::int[])', [created])
+  })
 
   it('with no verified boundaries, lookup is unavailable (never authoritative)', async () => {
     const r = await lookupWard(payload, -74.23, 40.77)

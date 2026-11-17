@@ -44,6 +44,16 @@ const src = {
     notes: 'Campaign property. Not authoritative; legislation must come from the Clerk\'s official records.' }),
 }
 
+// ---------------------------------------------------------------- municipal boundary (official, U.S. Census Bureau)
+{
+  const { loadBoundary, ORANGE_MUNICIPAL_CENSUS } = await import('./load-boundary')
+  const client = await pg.connect()
+  try { console.log('municipal boundary', await loadBoundary(client, ORANGE_MUNICIPAL_CENSUS)) } finally { client.release() }
+  await upsert('source-records', 'url', { title: 'City of Orange township legal boundary (U.S. Census Bureau TIGERweb, GEOID 3401313045)', url: ORANGE_MUNICIPAL_CENSUS.sourceUrl,
+    owner: 'U.S. Census Bureau', ownerType: 'government', retrievedAt: RETRIEVED, status: 'verified', checksumSha256: 'd709b224953816f8a3f16a1259566383d0f2c594c53058192f998ab4116e214e',
+    notes: ORANGE_MUNICIPAL_CENSUS.notes })
+}
+
 // ---------------------------------------------------------------- departments (names from official navigation)
 const deptDefs = [
   { name: 'Office of the City Clerk', slug: 'city-clerk', officialUrl: 'https://orangetwpnjcc.org/city-clerk/', s: src.council },

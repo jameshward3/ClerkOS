@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { CivicMap, ProjectLegend } from '@/components/CivicMap'
 import { SubscribeForm } from '@/components/SubscribeForm'
 import { DemoFlag, PageBand, StatusBadge, WardChip, human } from '@/components/ui'
-import { projectGeoJSON } from '@/lib/gis'
+import { municipalGeoJSON, projectGeoJSON } from '@/lib/gis'
 import { formatCents } from '@/lib/money'
 import { getClient } from '@/lib/payload'
 import { findOnePublic, findPublic } from '@/lib/public'
@@ -15,7 +15,8 @@ export default async function Project({ params }: { params: Promise<{ slug: stri
   const p = await findOnePublic('projects', { slug: { equals: slug } }, { depth: 1 })
   if (!p) notFound()
   const updates = (await findPublic('project-updates', { where: { project: { equals: p.id } }, sort: '-date', limit: 20 })).docs as any[]
-  const geo = await projectGeoJSON(await getClient(), [p.id])
+  const payload = await getClient()
+  const [geo, boundary] = await Promise.all([projectGeoJSON(payload, [p.id]), municipalGeoJSON(payload)])
   geo.features.forEach((f: any) => { f.properties.phase = p.phase })
   const demo = p.verificationStatus === 'demo'
   return (
@@ -29,7 +30,7 @@ export default async function Project({ params }: { params: Promise<{ slug: stri
           <h2>Scope</h2>
           <p>{p.scope}</p>
           {p.streets?.length > 0 && <ul>{p.streets.map((s: any, i: number) => <li key={i}>{s.name}{s.limits ? ` — ${s.limits}` : ''}</li>)}</ul>}
-          {geo.features.length > 0 && <><CivicMap label={`Location of ${p.title}`} projects={geo as any} illustrative={geo.features.some((x: any) => x.properties.verification !== 'verified')} /><ProjectLegend /></>}
+          {geo.features.length > 0 && <><CivicMap label={`Location of ${p.title}`} projects={geo as any} boundary={boundary} illustrative={geo.features.some((x: any) => x.properties.verification !== 'verified')} /><ProjectLegend /></>}
           <h2 style={{ marginTop: 32 }}>Milestones</h2>
           <p className="meta">Approval, funding, scheduling, construction, substantial completion and closeout are recorded separately.</p>
           <ol className="timeline">

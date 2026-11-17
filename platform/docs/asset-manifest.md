@@ -1,7 +1,7 @@
 # Asset manifest
 | Asset | Source | Rights | Location | Alt text | Status |
 |---|---|---|---|---|---|
-| Official City seal | **Not supplied** | — | — | — | **Blocked.** Text wordmark used. Need a sanitized SVG from the Clerk with usage approval. The seal in the concept images must not be extracted or redrawn. |
+| Official City seal | https://orangenj.gov/ImageRepository/Document?documentId=80 (official site, alt "Seal of the Orange City Township") | Prototype use authorized 2026-11-17 by the project owner (City Council member) | — | empty (decorative; adjacent text names the City) | **In use**, unmodified PNG 385×385, SHA-256 bb07b430…d02b (`docs/asset-manifest.json`). Vector master from the Clerk still requested. |
 | Hero photography | **Not supplied** | — | — | — | Placeholder panel states "Photography pending". Needs licensed, location-verified Orange photos (City-owned preferred). |
 | Inter typeface | @fontsource-variable/inter 5.3.0 | SIL OFL 1.1 | self-hosted | n/a | Approved |
 | Icons | lucide-react 1.66.0 | ISC | bundled | decorative (aria-hidden) | Approved |

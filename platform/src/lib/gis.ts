@@ -121,3 +121,12 @@ export async function placesGeoJSON(payload: Payload, places: { id: number; slug
   const rows = await q(payload, `SELECT place_id, verification, ST_AsGeoJSON(geom, 6)::json AS g FROM civic.place_points WHERE place_id = ANY($1::int[])`, [places.map((p) => p.id)])
   return { type: 'FeatureCollection', features: rows.map((r) => { const p = byId.get(r.place_id)!; return { type: 'Feature', properties: { slug: p.slug, name: p.name, jurisdiction: p.jurisdiction, kind: p.kind, verification: r.verification }, geometry: r.g } }) }
 }
+
+/** Current municipal boundary for display, with its provenance. */
+export async function municipalGeoJSON(payload: Payload) {
+  const v = await effectiveVersion(payload, 'municipal', false, new Date().toISOString().slice(0, 10))
+  if (!v) return null
+  const rows = await q(payload, `SELECT ST_AsGeoJSON(ST_Union(geom), 6)::json AS g FROM civic.municipal_geometries WHERE boundary_version_id=$1`, [v.id])
+  if (!rows[0]?.g) return null
+  return { verification: v.verification as 'verified' | 'unverified' | 'demo', custodian: v.custodian, geometry: rows[0].g as { type: string; coordinates: any } }
+}

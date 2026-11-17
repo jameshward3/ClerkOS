@@ -1,6 +1,16 @@
 # GIS provenance
-**Status: no authoritative municipal or ward geometry is loaded.** Ward lookup therefore returns "Ward boundaries are not
-yet verified" and the explorer shows a directory. This is deliberate: ZIP 07050 and map screenshots are not ward
+**Municipal boundary: loaded and verified (2026-11-17).** Source: U.S. Census Bureau TIGERweb County Subdivisions,
+"City of Orange township", GEOID 3401313045 (legal boundary reported by the municipality through the Boundary and
+Annexation Survey). File: `data/boundaries/orange-municipal-census-3401313045.geojson` (SHA-256 d709b224…214e),
+loaded by `scripts/load-boundary.ts`. Valid polygon, 5.736 km².
+
+**Comparison with the ZIP 07050 polygon** embedded in the project owner's paving map
+(jameshward3.github.io/OrangeStreetPaving, shown on jw4o.com): 98% overlap; the ZIP polygon includes 0.050 km² outside
+the City, omits 0.096 km² of the City, and departs from the legal line by up to 79 m. Maps now use the same visual
+treatment as that map (OpenStreetMap basemap, grey outside the City, dashed navy outline) with the Census legal line.
+
+**Ward boundaries: still not loaded.** Ward lookup therefore returns "Ward boundaries are not yet verified" and the
+explorer shows a directory. This is deliberate: ZIP 07050 and map screenshots are not ward
 geometry, and outlines are never divided into invented quadrants.
 
 ## What is needed from a custodian (City Engineering / Clerk / Essex County GIS)

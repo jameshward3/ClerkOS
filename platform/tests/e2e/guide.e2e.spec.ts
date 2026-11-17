@@ -9,6 +9,18 @@ test('§2 home link accessible name is "City of Orange Township home"', async ({
   await expect(page.getByRole('link', { name: /^city of orange township home$/i })).toBeVisible()
 })
 
+test('§2 official seal lockup: unmodified file, decorative alt, 80px desktop / 48px mobile @mobile', async ({ page, request, isMobile }) => {
+  await page.goto('/')
+  const seal = page.locator('header .wordmark__seal')
+  await expect(seal).toHaveAttribute('alt', '')
+  const box = await seal.boundingBox()
+  expect(Math.round(box!.width)).toBe(isMobile ? 48 : 80)
+  expect(Math.round(box!.height)).toBe(Math.round(box!.width)) // circular aspect preserved
+  const bytes = await (await request.get('/assets/brand/city-seal.png')).body()
+  const { createHash } = await import('node:crypto')
+  expect(createHash('sha256').update(bytes).digest('hex')).toBe('bb07b430a6c759df7b33bf056e9afbbc05a267ef6c4da5dcddcff4bbe5d1d02b')
+})
+
 test('§4 mobile header is compact (72–88px) and the menu holds the utility links @mobile', async ({ page, isMobile }) => {
   test.skip(!isMobile)
   await page.goto('/')
@@ -32,6 +44,12 @@ test('§4 focus ring: 3px outline with 3px offset on light, gold ring on navy', 
   await page.locator('.tasks a').first().focus()
   const dark = await page.evaluate(() => getComputedStyle(document.activeElement!).outlineColor)
   expect(dark).toBe('rgb(183, 155, 89)')
+})
+
+test('§6 maps draw the official municipal boundary with its source', async ({ page }) => {
+  await page.goto('/projects')
+  await expect(page.locator('figure figcaption')).toContainText('City of Orange township boundary (official record, U.S. Census Bureau)')
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('OpenStreetMap', { timeout: 15_000 })
 })
 
 test('§6 maps without verified geometry are labeled illustrative', async ({ page }) => {

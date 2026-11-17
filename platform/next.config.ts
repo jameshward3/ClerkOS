@@ -14,9 +14,9 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${tileOrigin}`.trim(),
+  `img-src 'self' data: blob: https://tile.openstreetmap.org ${tileOrigin}`.trim(),
   "font-src 'self' data:",
-  `connect-src 'self' ${tileOrigin}${isProd ? '' : ' ws:'}`.trim(),
+  `connect-src 'self' https://tile.openstreetmap.org ${tileOrigin}${isProd ? '' : ' ws:'}`.trim(),
   "worker-src 'self' blob:",
   "frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'", "form-action 'self'",
 ].join('; ')

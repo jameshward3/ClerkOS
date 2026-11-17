@@ -3,7 +3,7 @@ import type { Where } from 'payload'
 import { CivicMap, ProjectLegend } from '@/components/CivicMap'
 import { GROUP_STYLE, groupOf } from '@/lib/projectStatus'
 import { DemoFlag, Empty, PageBand, StatusBadge, WardChip, human } from '@/components/ui'
-import { projectGeoJSON } from '@/lib/gis'
+import { municipalGeoJSON, projectGeoJSON } from '@/lib/gis'
 import { formatCents } from '@/lib/money'
 import { one, pick, qs, type SP } from '@/lib/params'
 import { getClient } from '@/lib/payload'
@@ -31,7 +31,8 @@ export default async function Projects({ searchParams }: { searchParams: SP }) {
   const res = await findPublic('projects', { where: and.length ? { and } : undefined, sort: '-programYear', limit: 200 })
   const docs = res.docs as any[]
   const allYears = [...new Set(((await findPublic('projects', { limit: 500 })).docs as any[]).map((p) => p.programYear).filter(Boolean))].sort().reverse()
-  const geo = await projectGeoJSON(await getClient(), docs.map((d) => d.id))
+  const payload = await getClient()
+  const [geo, boundary] = await Promise.all([projectGeoJSON(payload, docs.map((d) => d.id)), municipalGeoJSON(payload)])
   const byId = new Map(docs.map((d) => [d.id, d]))
   geo.features.forEach((ft: any) => { const p = byId.get(ft.properties.projectId); ft.properties.phase = p?.phase; ft.properties.slug = p?.slug })
   const base = { street: f.street || undefined, ward: f.ward, type: f.type, phase: f.phase, year: f.year }
@@ -62,7 +63,7 @@ export default async function Projects({ searchParams }: { searchParams: SP }) {
           <>
             {f.view === 'default' && <Link className="btn btn--secondary map-toggle" href={`/projects${qs(base, { view: 'map' })}`}>Show map</Link>}
             <div className={f.view === 'default' ? 'map-optional' : undefined}>
-              <CivicMap label="Project locations" projects={geo as any} linkBase="/projects" illustrative={geo.features.some((x: any) => x.properties.verification !== 'verified')} />
+              <CivicMap label="Project locations" projects={geo as any} boundary={boundary} linkBase="/projects" illustrative={geo.features.some((x: any) => x.properties.verification !== 'verified')} />
               <ProjectLegend />
             </div>
           </>
