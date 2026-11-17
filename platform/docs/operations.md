@@ -26,6 +26,8 @@ restore was not drilled (no bucket configured).
   retention ≥ 90 days. Error monitoring (e.g. Sentry) is an adapter to add with credentials (checklist P-7).
 
 ## Providers to configure
+Basemap: the prototype loads OpenStreetMap's public tiles in visitors' browsers (`NEXT_PUBLIC_BASEMAP=osm`, default); their usage
+policy forbids heavy use, so production must set `NEXT_PUBLIC_MAP_STYLE_URL` to a licensed provider or `NEXT_PUBLIC_BASEMAP=none`.
 Mail (SMTP credentials), geocoder (`census` needs outbound access), basemap style URL, S3 bucket, identity-aware proxy +
 IdP app registration. None are required for the site to run; each degrades to an explicit "not available" state.
 

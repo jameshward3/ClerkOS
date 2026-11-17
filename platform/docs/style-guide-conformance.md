@@ -4,7 +4,7 @@ Reviewed 2026-11-17 after the guide was supplied. ✅ met · ◐ partly met / do
 | § | Requirement | Status | Where / evidence |
 |---|---|---|---|
 | 1 | Conflict order; mockups not facts; source inventory; no campaign content | ✅ | docs/source-inventory.md; jw4o.com excluded |
-| 2 | Official seal in masthead lockup (80/48px) | ⛔ | Not supplied. Text wordmark (allowed fallback); logged P-2 |
+| 2 | Official seal in masthead lockup (80/48px) | ✅ | Official orangenj.gov file, unmodified, authorized by project owner; seal + divider + text; e2e checks size and checksum. Vector master pending (P-2) |
 | 2 | Home link name "City of Orange Township home" | ✅ | Masthead; e2e `§2 home link` |
 | 2 | Real, verified Orange photography; hero eager; AVIF/WebP + fallback; width/height; decorative = empty alt | ◐ | Pipeline done (AVIF+WebP derivatives, original preserved, `<picture>`, eager hero, decorative flag). No photos supplied (P-10) — placeholder states "Photography pending" |
 | 2 | Asset manifest fields incl. approvedBy/At, checksum, verificationStatus separate from approval | ✅ | `media` collection; int test `media asset manifest` |
@@ -19,7 +19,7 @@ Reviewed 2026-11-17 after the guide was supplied. ✅ met · ◐ partly met / do
 | 6 | No unverified ward geometry; illustrative label when unverified | ✅ | Banner on all maps; ward layer disabled with explanation; e2e `§6` |
 | 6 | Project styles: planning navy dashed, scheduled gold dashed, active teal solid + work symbol, complete navy solid + check | ✅ | `lib/projectStatus.ts`, legend; status lines ≥3:1 on canvas |
 | 6 | Mobile list-first with explicit map toggle; filters preserved | ✅ | e2e `§6 mobile defaults to the list` |
-| 6 | Neutral basemap, attribution | ⛔ | Basemap provider not configured (P-8); data-only canvas labeled |
+| 6 | Neutral basemap, attribution; clear municipal outline | ◐ | OpenStreetMap (desaturated) + Census legal boundary with mask, matching the owner's paving map; attribution shown. OSM tiles are prototype-only (P-8) |
 | 7 | Charts from data; horizontal bars; years as rows; zero baseline; fixed palette | ✅ | `BudgetChart.tsx` |
 | 7 | Color not the only encoding; tooltip via focus/tap | ✅ | Direct segment labels + ordered legend + table; Recharts `accessibilityLayer`; e2e `§7` |
 | 7 | Parks color #9A752F label contrast | ◐ | No text color reaches 4.5:1 on it; labels there render as large bold text (≥3:1). Tested. |

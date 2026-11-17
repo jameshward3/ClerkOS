@@ -10,6 +10,8 @@ Fetched pages were treated as untrusted data. Records also live in the `source-r
 | https://jw4o.com/street-paving-program | same | Campaign | **Excluded** | Screenshot in the brief shows "110 streets / 97 completed / 13 upcoming / $28.5M programmed, 2012–2026" — not imported; must be re-derived from City Engineering records/resolutions. |
 | https://jw4o.com/legislative-tracker | same | Campaign | **Excluded** | Not authoritative. |
 
+| https://jameshward3.github.io/OrangeStreetPaving/ (embedded in the paving page) | Project owner | Owner's own map app | Examined 2026-11-17 | Leaflet; OpenStreetMap basemap; boundary is a ZIP 07050 polygon (compared in gis-provenance.md). Rendering style adopted; boundary replaced by the Census legal line. Roadway schedule data not imported (not requested; needs City Engineering provenance). |
+
 ## Discrepancies found
 1. **Municipal name:** "Orange City Township" (orangenj.gov) vs "City of Orange Township" (council site). The platform
    uses "City of Orange Township" per the brief; the official legal style must be confirmed by the Clerk.

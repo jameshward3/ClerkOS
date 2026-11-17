@@ -26,6 +26,11 @@ direct chart labels + keyboard tooltips, capital investment by location, media m
 stamps, verification, AVIF), originals no longer re-encoded, staff previews, SSRF-guarded link checks, source warnings.
 Migration: src/migrations/20261117_224506_style_guide_conformance.
 
+## Seal and map boundary (owner request, 2026-11-17)
+- Official seal from orangenj.gov added unmodified to the masthead lockup, authorized by the project owner.
+- Maps render like the owner's paving map (OSM basemap, grey outside City, dashed navy outline) using the U.S. Census
+  Bureau legal municipal boundary instead of ZIP 07050 (98% overlap, up to 79 m apart). Ward boundaries still missing.
+
 ## Not done / open (see docs/production-checklist.md)
 - Official seal, photography, ward/municipal GIS, real content migration (only City Hall facts verified).
 - Docker images/compose not built (no daemon). S3/MinIO, SMTP, geocoder, basemap not exercised with real providers.
