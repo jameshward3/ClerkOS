@@ -23,7 +23,7 @@ export default async function Dataset({ params }: { params: Promise<{ slug: stri
         {d.definitions && <><h2>Definitions</h2><p>{d.definitions}</p></>}
         {d.corrections?.length > 0 && <><h2>Corrections</h2><ul>{d.corrections.map((c: any, i: number) => <li key={i}>{fmtShortDate(c.date)}: {c.note}</li>)}</ul></>}
         <p><a className="cta-link" href={`/data/budget.csv?year=${d.fiscalYear}&basis=${d.basis}&kind=${d.kind}`}>Download CSV</a></p>
-        <div className="table-wrap"><table>
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
           <caption>Rows ({lines.length})</caption>
           <thead><tr><th scope="col">Fund</th><th scope="col">Direction</th><th scope="col">Category</th><th scope="col">Description</th><th scope="col" className="num">Amount</th></tr></thead>
           <tbody>{lines.map((l) => <tr key={l.id}><td>{l.fund}</td><td>{human(l.direction)}</td><td>{human(l.category)}</td><td>{l.description}</td><td className="num">{formatCents(l.amountCents, true)}</td></tr>)}</tbody>

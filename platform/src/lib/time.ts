@@ -22,3 +22,6 @@ export const civilDate = (d: string | Date) =>
 /** True when `now` falls in [startsAt, endsAt). Missing bounds are open. */
 export const isActiveWindow = (startsAt?: string | null, endsAt?: string | null, now = new Date()) =>
   (!startsAt || new Date(startsAt) <= now) && (!endsAt || now < new Date(endsAt))
+
+/** Request-time clock for server components (ISO string, optional offset in ms). */
+export const requestNowIso = (offsetMs = 0) => new Date(Date.now() + offsetMs).toISOString()

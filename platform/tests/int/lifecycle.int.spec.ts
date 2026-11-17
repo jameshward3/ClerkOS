@@ -121,3 +121,15 @@ describe('concern intake', () => {
     expect((await search(payload, 'pothole eastbound')).hits).toHaveLength(0)
   })
 })
+
+describe('rate limiting', () => {
+  it('blocks after the limit within a window, keyed by a hash (no raw IP stored)', async () => {
+    const { rateLimit } = await import('@/lib/ratelimit')
+    const key = `203.0.113.${Math.floor(Math.random() * 200)}`
+    const results = []
+    for (let i = 0; i < 4; i++) results.push((await rateLimit(payload, 'test-bucket', key, 3, 3600)).allowed)
+    expect(results).toEqual([true, true, true, false])
+    const rows = await (payload.db as any).pool.query(`SELECT key_hash FROM civic.rate_limits WHERE bucket='test-bucket'`)
+    expect(rows.rows.every((r: any) => !r.key_hash.includes('203.0.113'))).toBe(true)
+  })
+})

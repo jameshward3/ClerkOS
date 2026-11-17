@@ -18,7 +18,7 @@ export default async function LegislationList({ searchParams }: { searchParams: 
     const votes = (await findPublic('votes', { sort: '-createdAt', limit: 50, depth: 1 })).docs as any[]
     return (<><CouncilBand /><div className="container section"><GovTabs current="votes" />
       <h2>Recorded votes</h2>
-      {votes.length === 0 ? <Empty title="No votes published yet." /> : <div className="table-wrap"><table>
+      {votes.length === 0 ? <Empty title="No votes published yet." /> : <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
         <caption>Roll-call votes</caption>
         <thead><tr><th scope="col">Motion</th><th scope="col">Meeting</th><th scope="col">Result</th><th scope="col" className="num">Yes</th><th scope="col" className="num">No</th><th scope="col" className="num">Abstain</th><th scope="col" className="num">Absent</th></tr></thead>
         <tbody>{votes.map((v) => <tr key={v.id}><td>{v.legislation?.slug ? <Link href={`/government/legislation/${v.legislation.slug}`}>{v.motion}</Link> : v.motion} <DemoFlag show={v.verificationStatus === 'demo'} text="Sample" /></td>
@@ -45,7 +45,7 @@ export default async function LegislationList({ searchParams }: { searchParams: 
           <button className="btn" type="submit">Apply</button>
         </form>
         <h2>Recent legislative activity</h2>
-        {res.docs.length === 0 ? <Empty title="No legislation matches." /> : <div className="table-wrap"><table>
+        {res.docs.length === 0 ? <Empty title="No legislation matches." /> : <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
           <caption>Legislation ({res.totalDocs})</caption>
           <thead><tr><th scope="col">Item</th><th scope="col">Topic</th><th scope="col">Status</th><th scope="col">Latest action</th></tr></thead>
           <tbody>{(res.docs as any[]).map((l) => { const last = [...(l.actions ?? [])].sort((a: any, b: any) => String(a.date).localeCompare(String(b.date))).pop(); return (

@@ -1,4 +1,4 @@
-import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook } from 'payload'
 import { sourceField, withWorkflow } from '../fields/workflow'
 import { lexicalToText } from '../lib/richtext'
 import { slugField } from './editorial'

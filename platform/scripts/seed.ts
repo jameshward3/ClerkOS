@@ -111,7 +111,7 @@ if (process.env.AUTH_MODE !== 'proxy') {
   ] as const) {
     const found = await payload.find({ collection: 'users', where: { email: { equals: email } }, limit: 1, overrideAccess: true })
     const data = { email, name: email.split('@')[0], roles: [...roles], departments: d.map((s) => depts[s].id), ...extra }
-    if (found.docs[0]) await payload.update({ collection: 'users', id: found.docs[0].id, data, overrideAccess: true })
+    if (found.docs[0]) await payload.update({ collection: 'users', id: found.docs[0].id, data: process.env.SEED_STAFF_PASSWORD ? { ...data, password: staffPassword } : data, overrideAccess: true })
     else await payload.create({ collection: 'users', data: { ...data, password: staffPassword }, overrideAccess: true })
   }
   console.log(`Development staff accounts: *@orange.test (admin, contributor, reviewer, publisher, clerk, data). New accounts' password: ${staffPassword}`)

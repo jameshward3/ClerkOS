@@ -56,7 +56,7 @@ export default async function Explore({ searchParams }: { searchParams: SP }) {
           <div className="map-legend"><span><i style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--navy)', display: 'inline-block' }} aria-hidden="true" />City-operated</span><span><i style={{ width: 14, height: 14, borderRadius: '50%', border: '3px solid var(--navy)', display: 'inline-block' }} aria-hidden="true" />Operated by another agency</span></div>
         </>}
         {places.length === 0 ? <Empty title="No places match."><p><Link href="/explore">Clear filters</Link></p></Empty> : (
-          <div className="table-wrap"><table>
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
             <caption>Places ({places.length})</caption>
             <thead><tr><th scope="col">Place</th><th scope="col">Type</th><th scope="col">Operated by</th><th scope="col">Ward</th></tr></thead>
             <tbody>{places.map((p) => <tr key={p.id}><td><Link href={`/explore/places/${p.slug}`}>{p.name}</Link> <DemoFlag show={p.verificationStatus === 'demo'} text="Sample" /></td><td>{human(p.kind)}</td><td>{JUR[p.jurisdiction]}</td><td>{p.ward ? <WardChip ward={p.ward} /> : 'Not determined'}</td></tr>)}</tbody>

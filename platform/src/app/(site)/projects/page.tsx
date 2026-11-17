@@ -68,7 +68,7 @@ export default async function Projects({ searchParams }: { searchParams: SP }) {
           </>
         )}
         {docs.length === 0 ? <Empty title="No projects match these filters."><p><Link href="/projects">Clear filters</Link></p></Empty> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
             <table>
               <caption>Projects{f.view === 'map' ? ' (same as the map)' : ''}</caption>
               <thead><tr><th scope="col">Project</th><th scope="col">Phase</th><th scope="col">Ward</th><th scope="col">Year</th><th scope="col" className="num">Estimated cost</th></tr></thead>

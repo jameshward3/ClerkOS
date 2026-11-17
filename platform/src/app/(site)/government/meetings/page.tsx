@@ -6,7 +6,7 @@ import { SubscribeForm } from '@/components/SubscribeForm'
 import { DemoFlag, Empty, human } from '@/components/ui'
 import { one, pick, qs, type SP } from '@/lib/params'
 import { findPublic } from '@/lib/public'
-import { fmtDate, fmtTime } from '@/lib/time'
+import { fmtDate, fmtTime, requestNowIso } from '@/lib/time'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Meetings' }
@@ -17,7 +17,7 @@ export default async function Meetings({ searchParams }: { searchParams: SP }) {
   const when = one(sp.when) === 'past' ? 'past' : 'upcoming'
   const body = pick(one(sp.body), BODIES)
   const page = Math.max(1, Number(one(sp.page)) || 1)
-  const now = new Date(Date.now() - 6 * 3600e3).toISOString()
+  const now = requestNowIso(-6 * 3600e3)
   const and: Where[] = [when === 'past' ? { startsAt: { less_than: now } } : { startsAt: { greater_than_equal: now } }]
   if (body) and.push({ body: { equals: body } })
   const res = await findPublic('meetings', { where: { and }, sort: when === 'past' ? '-startsAt' : 'startsAt', limit: 20, page })

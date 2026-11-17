@@ -26,11 +26,12 @@ export function Masthead({ s, locale }: { s: Strings; locale: 'en' | 'es' }) {
     <header className="masthead">
       <div className="container masthead__inner">
         {/* Text wordmark: an authenticated official seal file has not been supplied (see docs/asset-manifest.md). */}
-        <Link href="/" className="wordmark" aria-label="City of Orange Township, New Jersey — home">
+        <Link href="/" className="wordmark">
           <span className="wordmark__text">
             <span className="wordmark__small">CITY OF</span>
             <span className="wordmark__name">ORANGE TOWNSHIP</span>
             <span className="wordmark__state">NEW JERSEY</span>
+            <span className="sr-only"> — home</span>
           </span>
         </Link>
         <div className="mast-right">

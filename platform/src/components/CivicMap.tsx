@@ -5,6 +5,7 @@
  * adapter); without one the map draws only our own data on a neutral canvas.
  * Project routes differ from ward fills by line pattern AND color.
  */
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -24,6 +25,7 @@ const PHASE_DASH: Record<string, number[]> = { planned: [1, 2], design: [3, 2], 
 export function CivicMap({ label, projects, places, wards, linkBase }: MapProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     let map: any
@@ -56,7 +58,7 @@ export function CivicMap({ label, projects, places, wards, linkBase }: MapProps)
             }
             map.on('click', (e: any) => {
               const f = map.queryRenderedFeatures(e.point).find((x: any) => x.properties?.slug)
-              if (f && linkBase) window.location.href = `${linkBase}/${f.properties.slug}`
+              if (f && linkBase) router.push(`${linkBase}/${f.properties.slug}`)
             })
             const bounds = new maplibregl.LngLatBounds()
             projects.features.forEach((f: any) => (f.geometry.coordinates.flat ? f.geometry.coordinates : []).forEach((c: any) => Array.isArray(c[0]) ? c.forEach((cc: any) => bounds.extend(cc)) : bounds.extend(c)))
@@ -65,15 +67,15 @@ export function CivicMap({ label, projects, places, wards, linkBase }: MapProps)
           if (places?.features.length) {
             map.addSource('places', { type: 'geojson', data: places })
             map.addLayer({ id: 'places', type: 'circle', source: 'places', paint: { 'circle-radius': 8, 'circle-color': ['match', ['get', 'jurisdiction'], 'municipal', '#0B2035', '#FFFFFF'], 'circle-stroke-color': '#0B2035', 'circle-stroke-width': 3 } })
-            map.on('click', 'places', (e: any) => { const s = e.features?.[0]?.properties?.slug; if (s && linkBase) window.location.href = `${linkBase}/${s}` })
+            map.on('click', 'places', (e: any) => { const s = e.features?.[0]?.properties?.slug; if (s && linkBase) router.push(`${linkBase}/${s}`) })
           }
         })
-      } catch (e) {
+      } catch {
         setError('The interactive map could not load. All information is available in the list.')
       }
     })()
     return () => { cancelled = true; map?.remove() }
-  }, [projects, places, wards, linkBase])
+  }, [projects, places, wards, linkBase, router])
 
   return (
     <figure style={{ margin: 0 }}>

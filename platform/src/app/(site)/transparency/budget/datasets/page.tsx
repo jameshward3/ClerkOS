@@ -21,7 +21,7 @@ export default async function Datasets() {
           <dt>amount_usd</dt><dd>Nominal US dollars to the cent. Blank = not available (not zero).</dd>
           <dt>verification</dt><dd>&ldquo;verified&rdquo; against an official source, or &ldquo;ILLUSTRATIVE&rdquo; demo data.</dd>
         </dl>
-        <div className="table-wrap"><table>
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table>
           <caption>Published datasets</caption>
           <thead><tr><th scope="col">Dataset</th><th scope="col">Year</th><th scope="col">Basis</th><th scope="col">Type</th><th scope="col">Updated</th></tr></thead>
           <tbody>{ds.map((d) => <tr key={d.id}><td><Link href={`/transparency/budget/datasets/${d.slug}`}>{d.title}</Link> <DemoFlag show={d.verificationStatus === 'demo'} text="Illustrative" /></td><td className="num">{d.fiscalYear}</td><td>{human(d.basis)}</td><td>{human(d.kind)}</td><td>{fmtShortDate(d.dataUpdatedAt)}</td></tr>)}</tbody>

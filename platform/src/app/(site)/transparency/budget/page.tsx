@@ -65,7 +65,7 @@ export default async function Budget({ searchParams }: { searchParams: SP }) {
             <h2 id="spend-h">Spending by category</h2>
             <p>{focus[0] && largest ? `In FY ${v.focusYear}, ${CATEGORY_META[largest[0]].label.toLowerCase()} is the largest category at ${formatCents(largest[1])} (${pct(largest[1], focusTotal)}% of ${formatCents(focusTotal)}).` : 'Summary not available.'} Years are rows; categories add up to each year&rsquo;s total.</p>
             <StackedYears title="Spending by category by year" rows={chartRows as any} series={SPEND_CATEGORIES.map((c) => ({ key: c, ...CATEGORY_META[c] }))} />
-            <div className="table-wrap" style={{ marginTop: 16 }}>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)" style={{ marginTop: 16 }}>
               <table>
                 <caption>Spending by category and year (same data as the chart)</caption>
                 <thead><tr><th scope="col">Year</th>{SPEND_CATEGORIES.map((c) => <th key={c} scope="col" className="num">{CATEGORY_META[c].label}</th>)}<th scope="col" className="num">Total</th></tr></thead>
@@ -80,7 +80,7 @@ export default async function Budget({ searchParams }: { searchParams: SP }) {
           <section id="revenues" aria-labelledby="rev-h" className="panel" style={{ background: 'var(--white)', marginTop: 24 }}>
             <h2 id="rev-h">Where resources come from — FY {v.focusYear}</h2>
             <SimpleBars title="Revenue sources" rows={v.revenueMix.map((m) => ({ label: m.label, cents: m.cents, color: m.color }))} />
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
               <table><caption>Revenue sources, FY {v.focusYear}</caption>
                 <thead><tr><th scope="col">Source</th><th scope="col" className="num">Amount</th><th scope="col" className="num">Share</th></tr></thead>
                 <tbody>{v.revenueMix.map((m) => { const tot = v.revenueMix.reduce((a, x) => a + (x.cents ?? 0), 0); return <tr key={m.key}><th scope="row">{m.label}</th><td className="num">{formatCents(m.cents)}</td><td className="num">{pct(m.cents, tot) ?? 'Not available'}{pct(m.cents, tot) != null ? '%' : ''}</td></tr> })}</tbody>

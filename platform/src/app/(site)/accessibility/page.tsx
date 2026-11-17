@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { PageBand } from '@/components/ui'
 import { CITY_HALL } from '@/lib/facts'
 export const metadata = { title: 'Accessibility' }
@@ -9,6 +10,6 @@ export default function Accessibility() {
     <h2>Known limitations</h2>
     <ul><li>Historic records linked from the current official websites may not be accessible.</li><li>The interactive map is a visual aid; use the list beside it for full information.</li><li>Spanish translations of page content are incomplete; untranslated pages say so.</li></ul>
     <h2>Report a barrier</h2>
-    <p>If something does not work for you, call {CITY_HALL.name} at <a href={`tel:${CITY_HALL.phoneTel}`}>{CITY_HALL.phone}</a> or <a href="/report-a-concern">use the concern form</a> and choose &ldquo;Other&rdquo;. Tell us the page and what happened.</p>
+    <p>If something does not work for you, call {CITY_HALL.name} at <a href={`tel:${CITY_HALL.phoneTel}`}>{CITY_HALL.phone}</a> or <Link href="/report-a-concern">use the concern form</Link> and choose &ldquo;Other&rdquo;. Tell us the page and what happened.</p>
   </div></>)
 }
